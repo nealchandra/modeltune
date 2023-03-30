@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.root.json",
+  "compilerOptions": {
+    "composite": true,
+    "target": "ESNext",
+    "resolveJsonModule": true,
+    "experimentalDecorators": true,
+    "outDir": "build",
+    "baseUrl": ".",
+    "paths": {
+      "@js/playground/*": ["src/*"]
+    }
+  }
+}

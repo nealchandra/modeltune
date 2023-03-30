@@ -1,0 +1,11 @@
+{
+  "editor.formatOnSave": true,
+  "search.exclude": {
+    "**/.yarn": true,
+    "**/.pnp.*": true
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "prettier.prettierPath": "js/.yarn/sdks/prettier/index.js",
+  "typescript.tsdk": "js/.yarn/sdks/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
+}
