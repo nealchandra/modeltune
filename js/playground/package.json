@@ -8,9 +8,12 @@
     "start": "yarn run ts-node -r tsconfig-paths/register ./src/index.ts"
   },
   "dependencies": {
-    "@js/prompt-engine": "workspace:*"
+    "@js/prompt-engine": "workspace:*",
+    "dotenv": "^16.0.3",
+    "openai": "^3.2.1"
   },
   "devDependencies": {
+    "@types/dotenv": "^8.2.0",
     "esbuild": "^0.15.13",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.1.0"

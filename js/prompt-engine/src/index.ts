@@ -1,3 +1,1 @@
-export const test = () => {
-  console.log('test');
-};
+export * from './chain';
