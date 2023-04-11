@@ -24,15 +24,23 @@ class Message(BaseModel):
 class ChatCompletionRequest(BaseModel):
     messages: List[Message]
 
-@app.post("/inferences", status_code=201)
+class ChatCompletionResponse(BaseModel):
+    task_id: str
+
+class InferenceResponse(BaseModel):
+    task_id: str
+    task_status: str
+    task_result: str
+
+@app.post("/inferences", status_code=201, response_model=ChatCompletionResponse)
 def create_inference(body: ChatCompletionRequest = Body(...)):
     messages = [m.dict() for m in body.messages]
     task = celery.send_task('inference', kwargs={'messages': messages})
     return JSONResponse({"task_id": task.id})
 
 
-@app.get("/inferences/{task_id}")
-def get_inference_status(task_id):
+@app.get("/inferences/{task_id}", response_model=InferenceResponse)
+def get_inference_status(task_id: str):
     task_result = AsyncResult(task_id)
     result = {
         "task_id": task_id,

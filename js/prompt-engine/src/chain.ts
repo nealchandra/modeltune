@@ -117,6 +117,8 @@ abstract class Agent {
   /* Creates the next chain in the conversation, taking the end-user prompt as input. */
   abstract createChain(history: Message[], input: string): Promise<Chain>;
 
+  abstract executeNextChain(chain: Chain, input: string): void;
+
   async prompt(input: string) {
     const chain = await this.createChain(
       this.history.getAbridgedHistory(),
@@ -126,7 +128,7 @@ abstract class Agent {
 
     const resp = await chain.complete();
 
-    this.executeNextChain(chain, input);
+    return await this.executeNextChain(chain, input);
   }
 }
 

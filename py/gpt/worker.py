@@ -47,7 +47,13 @@ class Message(TypedDict):
 
 @celery.task(name="inference")
 def inference(messages: List[Message]):
-    prompt = ''.join(f"### {m['role']}: {m['content']} \n" for m in messages)
+    # handle system prompt
+    prompt = ""
+    if messages[0]['role'] == 'System':
+        sys_prompt = messages.pop(0)['content']
+        prompt += f'{sys_prompt} ###'
+
+    prompt += ''.join(f"### {m['role']}: {m['content']} \n" for m in messages)
     prompt += """
 ### Assistant:"""
     print(prompt)
@@ -58,10 +64,13 @@ def run_inference(prompt):
     generation_config = transformers.GenerationConfig(
         temperature=0.7,
         top_p=0.70,
+        repetition_penalty=1/0.85
     )
 
     # Tokenize prompt and generate against the model
     batch = tokenizer(prompt, return_tensors="pt")
+
+    start_ts = time.time()
 
     # Generate response from model using stopping criteria to stream the output
     with torch.no_grad():
@@ -69,18 +78,33 @@ def run_inference(prompt):
             generation_config=generation_config,
             input_ids=batch["input_ids"].cuda(),
             attention_mask=torch.ones_like(batch["input_ids"]).cuda(),
-            max_new_tokens=512,
-            # stopping_criteria=[Stream(tokenizer=tokenizer, console=console)]
+            max_new_tokens=2048,
+            stopping_criteria=[StopConversation(tokenizer)]
         )
 
         #  Send reply back to client
-        prediction = tokenizer.decode(out[0])
+        out_raw = out[0]
+        total_time = time.time() - start_ts
+        token_per_sec = len(out_raw) / total_time\
+
+        print(f'Generated {len(out_raw)} tokens in {total_time:.2f} seconds ({token_per_sec:.2f} tokens/sec)')
+
+        prediction = tokenizer.decode(out_raw)
         return prediction
 
+class StopConversation(transformers.StoppingCriteria):
+    def __init__(self, tokenizer):
+        self.tokenizer = tokenizer
+
+    def __call__(self, input_ids, scores) -> bool:
+        # exit if the model generates a prompt which contains "### Human:", indicating the 
+        # model is erroneously hallucinating a human response
+        return tokenizer.decode(input_ids[0], skip_special_tokens=True).endswith("### Human:")
+
 # class Stream(transformers.StoppingCriteria):
-#     def __init__(self, tokenizer, console):
-#         self.tokenizer = tokenizer
-#         self.console = console
+    # def __init__(self, tokenizer, console):
+    #     self.tokenizer = tokenizer
+    #     self.console = console
 
 #     def __call__(self, input_ids, scores) -> bool:
 #         self.console.erase()

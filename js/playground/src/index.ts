@@ -8,6 +8,8 @@ import {
 import * as eng from '@js/prompt-engine';
 import { Message } from '@js/prompt-engine';
 
+import { DefaultService, type Message as MessageType, OpenAPI } from './client';
+
 dotenv.config();
 
 class OpenAIClient implements eng.Client {
@@ -34,6 +36,52 @@ class OpenAIClient implements eng.Client {
   }
 }
 
+function capitalizeFirstLetter(string: String) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+class VicunaClient implements eng.Client {
+  constructor() {
+    OpenAPI.BASE = 'http://localhost:8080';
+  }
+
+  async complete(messages: eng.Message[]): Promise<eng.Message> {
+    const resp = await DefaultService.createInferenceInferencesPost({
+      messages: messages.map((m) => ({
+        role: capitalizeFirstLetter(
+          m.role.replace('user', 'human')
+        ) as MessageType.role,
+        content: m.content,
+      })),
+    });
+
+    const taskId = resp.task_id;
+
+    const result: string = await new Promise((resolve) => {
+      let interval: NodeJS.Timeout;
+
+      const checkForResult = async () => {
+        const task = await DefaultService.getInferenceStatusInferencesTaskIdGet(
+          taskId
+        );
+
+        if (task.task_status === 'SUCCESS') {
+          clearInterval(interval);
+          resolve(task.task_result);
+        }
+      };
+
+      interval = setInterval(checkForResult, 250);
+    });
+
+    const content = result
+      .split('### Assistant: ')
+      .pop()
+      ?.replace('### Human:', '');
+    return new Message('assistant' as eng.Role, content ?? '');
+  }
+}
+
 class CustomAgent extends eng.Agent {
   client: eng.Client;
 
@@ -45,13 +93,14 @@ class CustomAgent extends eng.Agent {
   setup() {}
 
   processCompletion(msg: eng.Message, chain: eng.Chain): void {
+    console.log(msg);
     if (msg.content.includes('Thought: Do I need to use a tool? Yes')) {
       msg.isInnerDialogue = true;
     }
     chain.push(msg);
   }
 
-  async executeNextChain(input: string): Promise<void> {
+  async createChain(history: eng.Message[], input: string): Promise<eng.Chain> {
     const chain = new eng.Chain(this.client);
 
     chain.push(
@@ -82,20 +131,22 @@ Assistant: [your response here]
 The converation will begin now:`
       )
     );
+    return Promise.resolve(chain);
+  }
 
+  async executeNextChain(chain: eng.Chain, input: string): Promise<void> {
     chain.push(new Message(eng.Role.USER, input));
     const completion = await chain.complete();
     this.processCompletion(completion, chain);
-
-    this.history.push(chain);
   }
 }
 
-const client = new OpenAIClient();
+// const client = new OpenAIClient();
+const client = new VicunaClient();
 
 const main = async () => {
   const agent = new CustomAgent(client);
-  await agent.executeNextChain('Who is the current CEO of Microsoft?');
+  await agent.prompt('Who is the current CEO of Microsoft?');
   agent.history.getFullHistory().forEach((m) => m.pprint());
 };
 
