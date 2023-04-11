@@ -16,16 +16,14 @@ services:
 
   gpt:
     build:
-      context: ./
+      context: ./gpt
       dockerfile: Dockerfile
-      args:
-        BUILDKIT_INLINE_CACHE: "0"
     image: gpt
+    runtime: nvidia
     shm_size: "64gb"
-    command: celery --app=worker.celery worker --concurrency=1 --loglevel=info --logfile=logs/celery.log
-    restart: unless-stopped
+    command: celery --app=worker.celery worker -P solo --loglevel=info
     volumes:
-      - models:/usr/models # Downloaded models location
+      - ${MODELS_DIR:-../../models}:/usr/models
     ports:
       - 7860:7860
     deploy:
@@ -38,12 +36,10 @@ services:
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - MODEL_PATH=${MODEL_RELATIVE_PATH}
+      - CHECKPT_PATH=${CHECKPT_RELATIVE_PATH}
     depends_on:
       - redis
 
   redis:
     image: redis:6-alpine
-
-volumes:
-  models:
-    name: models

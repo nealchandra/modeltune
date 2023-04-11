@@ -9,4 +9,5 @@ tqdm
 peft
 datasets
 celery
+redis
 git+https://github.com/huggingface/transformers

@@ -1,26 +1,13 @@
+The py directory currently contains 2 modules which can be run together with docker compose:
+
+1. llm-api, a generic FastAPI project which exposes some simple endpoints to trigger inferences. These tasks are then enqueued using Celery.
+2. gpt, a python worker which pulls Celery tasks and runs inferences against an int4 quantized local model. Currently this is using [vicuna](https://github.com/lm-sys/FastChat)
+
+Note the 2 projects have no direct dependencies, they are built and run separately, and only communicate via Celery backed by local redis.
+
 ## Setup
 
-Clone the repo and ([install conda](https://docs.conda.io/en/latest/miniconda.html).
+To run:
 
-Run the following commands:
-
-```
-conda create -n llama
-conda activate llama
-conda install torchvision torchaudio pytorch-cuda=11.7 git -c pytorch -c nvidia
-pip install -r requirements.txt
-```
-
-The third line assumes that you have an NVIDIA GPU.
-
-- If you have an AMD GPU, replace the third command with this one:
-
-```
-pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/rocm5.2
-```
-
-## Run
-
-```
-python ./cli.py --help
-```
+0. Download the model(s) to run into a local folder. Modify the .env file to use a different model.
+1. MODELS_DIR=/path/to/models docker compose up
