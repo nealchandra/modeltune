@@ -89,7 +89,7 @@ def run_inference(prompt):
 
         print(f'Generated {len(out_raw)} tokens in {total_time:.2f} seconds ({token_per_sec:.2f} tokens/sec)')
 
-        prediction = tokenizer.decode(out_raw)
+        prediction = tokenizer.decode(out_raw, skip_special_tokens=True)
         return prediction
 
 class StopConversation(transformers.StoppingCriteria):
@@ -100,14 +100,3 @@ class StopConversation(transformers.StoppingCriteria):
         # exit if the model generates a prompt which contains "### Human:", indicating the 
         # model is erroneously hallucinating a human response
         return tokenizer.decode(input_ids[0], skip_special_tokens=True).endswith("### Human:")
-
-# class Stream(transformers.StoppingCriteria):
-    # def __init__(self, tokenizer, console):
-    #     self.tokenizer = tokenizer
-    #     self.console = console
-
-#     def __call__(self, input_ids, scores) -> bool:
-#         self.console.erase()
-#         self.console.addstr(self.tokenizer.decode(input_ids[0], skip_special_tokens=True))
-#         self.console.refresh()
-#         return False
