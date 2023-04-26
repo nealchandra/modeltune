@@ -9,35 +9,23 @@ from celery import Celery
 import torch
 import transformers
 
-sys.path.insert(0, os.path.join(os.path.dirname( __file__ ), str(Path("./repositories/GPTQ-for-LLaMa"))))
-import llama
+import time
+import torch
+from alpaca_lora_4bit.autograd_4bit import load_llama_model_4bit_low_ram, Autograd4bitQuantLinear
+from alpaca_lora_4bit.monkeypatch.peft_tuners_lora_monkey_patch import replace_peft_model_with_int4_lora_model
+replace_peft_model_with_int4_lora_model()
 
 celery = Celery(__name__)
 celery.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379")
 celery.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379")
 
-
-
-def load_model(model_path, checkpoint, int4):
-    if int4:
-        model = load_quantized(model_path, checkpoint)
-    else:
-        model = transformers.LlamaForCausalLM.from_pretrained(model_path, load_in_8bit=True, device_map='auto')
-        model = PeftModel.from_pretrained(model, checkpoint, device_map={'': 0})
-    return model
-
-def load_quantized(model_path, pt_path):
-    load_quant = llama.load_quant
-    model = load_quant(model_path, pt_path, 4, 128)
-    model = model.to(torch.device('cuda:0'))
-    return model
-
+CONFIG_PATH = f'/usr/models/{os.environ["CONFIG_PATH"]}'
 MODEL_PATH = f'/usr/models/{os.environ["MODEL_PATH"]}'
-CHECKPOINT_PATH = f'/usr/models/{os.environ["CHECKPT_PATH"]}'
 
-tokenizer = transformers.LlamaTokenizer.from_pretrained(MODEL_PATH)
-model = load_model(MODEL_PATH, CHECKPOINT_PATH,  True)
+PEFT_RELATIVE_PATH = os.environ.get("PEFT_PATH", None)
+PEFT_PATH = f'/usr/models/{PEFT_RELATIVE_PATH}' if PEFT_RELATIVE_PATH else None
 
+model, tokenizer = load_llama_model_4bit_low_ram(CONFIG_PATH, MODEL_PATH, groupsize=128)
 print("Model loaded. Ready to receive prompts.")
 
 class Message(TypedDict):
