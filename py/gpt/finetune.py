@@ -1,20 +1,5 @@
-import os
-import sys
-# set src so alpaca_lora_4bit package is available without installing
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-src_dir = os.path.join(project_root, "src")
-sys.path.insert(0, src_dir)
-
 from alpaca_lora_4bit.monkeypatch.peft_tuners_lora_monkey_patch import replace_peft_model_with_int4_lora_model
 replace_peft_model_with_int4_lora_model()
-
-if False:
-    from alpaca_lora_4bit.monkeypatch.llama_flash_attn_monkey_patch import replace_llama_attn_with_flash_attn
-    replace_llama_attn_with_flash_attn()
-elif False:
-    from alpaca_lora_4bit.monkeypatch.llama_attn_hijack_xformers import hijack_llama_attention
-    hijack_llama_attention()
-
 
 import sys
 import os
@@ -26,26 +11,24 @@ from datasets import load_dataset
 import torch
 import transformers
 from alpaca_lora_4bit.autograd_4bit import load_llama_model_4bit_low_ram
-from peft import LoraConfig, get_peft_model, get_peft_model_state_dict, PeftModel, TaskType, set_peft_model_state_dict
+from peft import LoraConfig, get_peft_model, get_peft_model_state_dict, TaskType
 
-# ! Config
-from alpaca_lora_4bit import train_data
 
 CONFIG_PATH = f'/usr/models/{os.environ["CONFIG_PATH"]}'
 MODEL_PATH = f'/usr/models/{os.environ["MODEL_PATH"]}'
 
-LORA_OUTPUT_PATH = os.environ["LORA_OUTPUT_PATH"] 
+LORA_OUTPUT_PATH = f'/usr/models/loras/' 
 DATASET_PATH = f'/usr/datasets/{os.environ["DATASET_PATH"]}'
 
 # Load Basic Model
 model, tokenizer = load_llama_model_4bit_low_ram(CONFIG_PATH, MODEL_PATH, groupsize=128)
 
-MICRO_BATCH_SIZE = 4  # this could actually be 5 but i like powers of 2
-BATCH_SIZE = 256
+MICRO_BATCH_SIZE = 1  # this could actually be 5 but i like powers of 2
+BATCH_SIZE = 2
 GRADIENT_ACCUMULATION_STEPS = BATCH_SIZE // MICRO_BATCH_SIZE
 EPOCHS = 2
 LEARNING_RATE = 3e-4  # the Karpathy constant
-CUTOFF_LEN = 2048
+CUTOFF_LEN = 256
 LORA_R = 8
 LORA_ALPHA = 16
 LORA_DROPOUT = 0.05
@@ -65,7 +48,7 @@ print('Loading PEFT model and data.')
 
 model = get_peft_model(model, lora_config)
 data = load_dataset("json", data_files=DATASET_PATH)
-data = data['train'].train_test_split(test_size=0.1)
+data = data['train'].shard(num_shards=200, index=0).train_test_split(test_size=0.1)
 
 # Scales to half
 print('Fitting 4bit scales and zeros to half')

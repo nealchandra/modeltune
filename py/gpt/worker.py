@@ -12,6 +12,7 @@ import transformers
 import time
 import torch
 
+from peft import PeftModel
 import alpaca_lora_4bit.autograd_4bit
 from alpaca_lora_4bit.autograd_4bit import load_llama_model_4bit_low_ram, Autograd4bitQuantLinear
 from alpaca_lora_4bit.monkeypatch.peft_tuners_lora_monkey_patch import replace_peft_model_with_int4_lora_model
@@ -26,10 +27,14 @@ celery.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://lo
 CONFIG_PATH = f'/usr/models/{os.environ["CONFIG_PATH"]}'
 MODEL_PATH = f'/usr/models/{os.environ["MODEL_PATH"]}'
 
-PEFT_RELATIVE_PATH = os.environ.get("PEFT_PATH", None)
+PEFT_RELATIVE_PATH = os.environ.get("LORA_PATH", None)
 PEFT_PATH = f'/usr/models/{PEFT_RELATIVE_PATH}' if PEFT_RELATIVE_PATH else None
 
 model, tokenizer = load_llama_model_4bit_low_ram(CONFIG_PATH, MODEL_PATH, groupsize=128)
+
+if PEFT_PATH:
+    model = PeftModel.from_pretrained(model, PEFT_PATH, device_map={'': 0}, torch_dtype=torch.float32)
+    print('{} Lora Applied.'.format(PEFT_PATH))
 
 print('Apply auto switch and half')
 for n, m in model.named_modules():
@@ -54,7 +59,7 @@ def inference(messages: List[Message]):
     prompt = ""
     if messages[0]['role'] == 'System':
         sys_prompt = messages.pop(0)['content']
-        prompt += f'{sys_prompt} ###'
+        prompt += f'{sys_prompt} ###\n'
 
     prompt += ''.join(f"### {m['role']}: {m['content']} \n" for m in messages)
     prompt += """
