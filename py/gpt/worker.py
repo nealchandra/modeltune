@@ -11,8 +11,12 @@ import transformers
 
 import time
 import torch
+
+import alpaca_lora_4bit.autograd_4bit
 from alpaca_lora_4bit.autograd_4bit import load_llama_model_4bit_low_ram, Autograd4bitQuantLinear
 from alpaca_lora_4bit.monkeypatch.peft_tuners_lora_monkey_patch import replace_peft_model_with_int4_lora_model
+from alpaca_lora_4bit.models import Linear4bitLt
+
 replace_peft_model_with_int4_lora_model()
 
 celery = Celery(__name__)
@@ -26,6 +30,17 @@ PEFT_RELATIVE_PATH = os.environ.get("PEFT_PATH", None)
 PEFT_PATH = f'/usr/models/{PEFT_RELATIVE_PATH}' if PEFT_RELATIVE_PATH else None
 
 model, tokenizer = load_llama_model_4bit_low_ram(CONFIG_PATH, MODEL_PATH, groupsize=128)
+
+print('Apply auto switch and half')
+for n, m in model.named_modules():
+    if isinstance(m, Autograd4bitQuantLinear) or isinstance(m, Linear4bitLt):
+        if m.is_v1_model:
+            m.zeros = m.zeros.half()
+        m.scales = m.scales.half()
+        m.bias = m.bias.half()
+alpaca_lora_4bit.autograd_4bit.use_new = True
+alpaca_lora_4bit.autograd_4bit.auto_switch = True
+
 print("Model loaded. Ready to receive prompts.")
 
 class Message(TypedDict):
