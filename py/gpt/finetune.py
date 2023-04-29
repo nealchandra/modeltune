@@ -23,6 +23,10 @@ DATASET_PATH = f'/usr/datasets/{os.environ["DATASET_PATH"]}'
 # Load Basic Model
 model, tokenizer = load_llama_model_4bit_low_ram(CONFIG_PATH, MODEL_PATH, groupsize=128)
 
+if torch.cuda.device_count() > 1:
+    model.is_parallelizable = True
+    model.model_parallel = True
+
 MICRO_BATCH_SIZE = 4  # this could actually be 5 but i like powers of 2
 BATCH_SIZE = 64
 GRADIENT_ACCUMULATION_STEPS = BATCH_SIZE // MICRO_BATCH_SIZE
@@ -85,10 +89,6 @@ if True:
     print('Applying gradient checkpointing ...')
     from alpaca_lora_4bit.gradient_checkpointing import apply_gradient_checkpointing
     apply_gradient_checkpointing(model, checkpoint_ratio=1)
-
-if torch.cuda.device_count() > 1:
-    model.is_parallelizable = True
-    model.model_parallel = True
 
 training_arguments = transformers.TrainingArguments(
     per_device_train_batch_size=MICRO_BATCH_SIZE,

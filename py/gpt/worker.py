@@ -17,6 +17,8 @@ import alpaca_lora_4bit.autograd_4bit
 from alpaca_lora_4bit.autograd_4bit import load_llama_model_4bit_low_ram, Autograd4bitQuantLinear
 from alpaca_lora_4bit.monkeypatch.peft_tuners_lora_monkey_patch import replace_peft_model_with_int4_lora_model
 from alpaca_lora_4bit.models import Linear4bitLt
+from alpaca_lora_4bit.amp_wrapper import AMPWrapper
+
 
 replace_peft_model_with_int4_lora_model()
 
@@ -30,13 +32,18 @@ MODEL_PATH = f'/usr/models/{os.environ["MODEL_PATH"]}'
 PEFT_RELATIVE_PATH = os.environ.get("LORA_PATH", None)
 PEFT_PATH = f'/usr/models/{PEFT_RELATIVE_PATH}' if PEFT_RELATIVE_PATH else None
 
-model, tokenizer = load_llama_model_4bit_low_ram(CONFIG_PATH, MODEL_PATH, groupsize=128)
+model, tokenizer = load_llama_model_4bit_low_ram(CONFIG_PATH, MODEL_PATH)
 
 if PEFT_PATH:
     model = PeftModel.from_pretrained(model, PEFT_PATH, device_map={'': 0}, torch_dtype=torch.float32)
     print('{} Lora Applied.'.format(PEFT_PATH))
 
 print('Apply auto switch and half')
+
+model.half()
+wrapper = AMPWrapper(model)
+wrapper.apply_generate()
+
 for n, m in model.named_modules():
     if isinstance(m, Autograd4bitQuantLinear) or isinstance(m, Linear4bitLt):
         if m.is_v1_model:
@@ -86,18 +93,20 @@ def run_inference(prompt):
             generation_config=generation_config,
             input_ids=batch["input_ids"].cuda(),
             attention_mask=torch.ones_like(batch["input_ids"]).cuda(),
-            max_new_tokens=2048,
+            max_new_tokens=1024,
             stopping_criteria=[StopConversation(tokenizer)]
         )
 
         #  Send reply back to client
         out_raw = out[0]
         total_time = time.time() - start_ts
-        token_per_sec = len(out_raw) / total_time\
-
+        token_per_sec = len(out_raw) / total_time
+        
+        prediction = tokenizer.decode(out_raw, skip_special_tokens=True)
+        
+        print(f'{prediction}')
         print(f'Generated {len(out_raw)} tokens in {total_time:.2f} seconds ({token_per_sec:.2f} tokens/sec)')
 
-        prediction = tokenizer.decode(out_raw, skip_special_tokens=True)
         return prediction
 
 class StopConversation(transformers.StoppingCriteria):
