@@ -20,7 +20,7 @@ factory = InferenceFactory(stub, {
     "gpu": "A100",
     "image": stub.inference_image,
     "secret": modal.Secret.from_name("hf-secret"),
-    "shared_volumes": {'/vol/cache': cache_volume},
+    "shared_volumes": {'/root/.cache/huggingface/hub': cache_volume},
 })
 
 @stub.local_entrypoint()

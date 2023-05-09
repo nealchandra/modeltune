@@ -14,6 +14,7 @@ stub.inference_image = (
     .pip_install("numpy", pre=True)
     .pip_install("torch", index_url="https://download.pytorch.org/whl/cu118")
     .pip_install_from_requirements("requirements.modal.txt")
+    # .env({"HUGGING"})
 )
 
 stub.download_image = (

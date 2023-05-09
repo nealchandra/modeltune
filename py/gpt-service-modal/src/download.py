@@ -10,9 +10,9 @@ if stub.is_inside():
     cloud="gcp",
     image=stub.download_image,
     secret=modal.Secret.from_name("hf-secret"),
-    shared_volumes={'/vol/cache': cache_volume},
+    shared_volumes={'/root/.cache/huggingface/hub': cache_volume},
 )
 def download_model(repo_id: str = 'TheBloke/vicuna-13B-1.1-GPTQ-4bit-128g'):
     login(os.environ["HUGGINGFACE_TOKEN"])
-    snapshot_download(repo_id=repo_id, ignore_patterns="*.pt", cache_dir="/vol/cache")
+    snapshot_download(repo_id=repo_id, ignore_patterns="*.pt")
 

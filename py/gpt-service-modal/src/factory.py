@@ -23,7 +23,7 @@ class InferenceFactory:
                 @modal.method()
                 def prompt(self, prompt):
                     return inference(model=self.model, tokenizer=self.tokenizer, prompt=prompt)
-            c.__name__ = f'Inference:{repo_id}:lora:{lora}'
             cls = c
-        
+            self.model_map[model_def] = cls
+
         return cls.prompt

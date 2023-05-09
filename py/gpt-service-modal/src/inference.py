@@ -20,10 +20,17 @@ def load_model_and_lora(repo_id, model_path, lora=None):
     from peft import PeftModel
     from alpaca_lora_4bit.autograd_4bit import load_llama_model_4bit_low_ram
     from huggingface_hub import try_to_load_from_cache, _CACHED_NO_EXIST
+    from huggingface_hub.constants import HUGGINGFACE_HUB_CACHE
 
-    filepath = try_to_load_from_cache(repo_id, filename=model_path, cache_dir="/vol/cache")
+    filepath = try_to_load_from_cache(repo_id, filename=model_path)
     if filepath is _CACHED_NO_EXIST:
-        download_model.call(repo_id)
+        # handle this case
+        raise Exception('Model path does not exist')
+    
+    if not filepath:
+        raise Exception('Model path does not exist')
+        # download_model.call(repo_id)
+        # filepath = try_to_load_from_cache(repo_id, filename=model_path)
     
     model, tokenizer = load_llama_model_4bit_low_ram(repo_id, filepath, half=True)
     print('Loaded model and tokenizer for {}'.format(repo_id))
