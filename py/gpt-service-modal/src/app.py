@@ -5,36 +5,17 @@ API routes for transcription, language model generation and text-to-speech.
 
 import json
 from pathlib import Path
+from typing import List, Literal, Optional, TypedDict
 
 import modal
 
-from .common import stub, cache_volume
+from .common import stub
 from .factory import InferenceFactory
-from .inference import load_monkeypatch_deps, load_model_and_lora, inference
 
-from typing import TypedDict, List, Literal
 
 class Message(TypedDict):
     role: Literal['System','Human','Assistant']
     content: str
-
-
-@stub.cls(**{
-        "cloud": "gcp",
-        "gpu": "A100",
-        "image": stub.inference_image,
-        "secret": modal.Secret.from_name("hf-secret"),
-        "shared_volumes": {'/root/.cache/huggingface/hub': cache_volume},
-        "container_idle_timeout": 90,
-})
-class Inference:
-    def __enter__(self):
-        load_monkeypatch_deps()
-        self.model, self.tokenizer = load_model_and_lora('TheBloke/vicuna-13B-1.1-GPTQ-4bit-128g', 'vicuna-13B-1.1-GPTQ-4bit-128g.latest.safetensors', None)
-
-    @modal.method()
-    def prompt(self, prompt):
-        return inference(model=self.model, tokenizer=self.tokenizer, prompt=prompt)
 
 @stub.function(
     image=stub.download_image,
@@ -43,33 +24,24 @@ class Inference:
 )
 @modal.asgi_app()
 def web():
-    from pydantic import BaseModel
     from fastapi import FastAPI, Request
     from fastapi.responses import Response, StreamingResponse
     from fastapi.staticfiles import StaticFiles
-    
-    # hack to allow spawning modal fn inside a modal instance
-    modal.app._is_container_app = False
+    from pydantic import BaseModel
     
     web_app = FastAPI()
-    # factory = InferenceFactory(stub, {
-    #     "cloud": "gcp",
-    #     "gpu": "A100",
-    #     "image": stub.inference_image,
-    #     "secret": modal.Secret.from_name("hf-secret"),
-    #     "shared_volumes": {'/root/.cache/huggingface/hub': cache_volume},
-    # })
-    inference = Inference()
-
+    factory = InferenceFactory()
 
     class ChatCompletionRequest(BaseModel):
+        repo_id: str
+        model_path: str
+        lora: Optional[str]
         content: str
-
 
     @web_app.post("/generate")
     async def generate(request: ChatCompletionRequest):
         content = request.content
-        
+
         messages: List[Message] = [
             {'role': 'System', 'content': 'You are a friendly AI assistant'},
             {'role': 'Human', 'content': f'{content}'}
@@ -85,10 +57,11 @@ def web():
     ### Assistant:"""
         print(prompt)
 
-        inference.prompt.call(prompt)
-        # fn = factory.get_model_inference_fn('TheBloke/vicuna-13B-1.1-GPTQ-4bit-128g', 'vicuna-13B-1.1-GPTQ-4bit-128g.latest.safetensors')
-        
-        # with stub.run():
-        #     fn.call(prompt)
+        predict = factory.get_model_inference_fn(request.repo_id, request.model_path, request.lora)
+
+        return StreamingResponse(
+            predict(prompt),
+            media_type="text/event-stream",
+        )
 
     return web_app

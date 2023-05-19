@@ -1,15 +1,41 @@
-import modal
 import time
+from queue import Queue
+from threading import Thread
 
+import modal
 
-from .common import stub, cache_volume
+from .common import cache_volume, stub
 from .download import download_model
+
+
+@stub.cls(**{
+    "cloud": "gcp",
+    "gpu": "A100",
+    "image": stub.inference_image,
+    "secret": modal.Secret.from_name("hf-secret"),
+    "shared_volumes": {'/root/.cache/huggingface/hub': cache_volume},
+})
+class Inference:
+    def __init__(self, repo_id, model_path, lora=None):
+        self.repo_id = repo_id
+        self.model_path = model_path
+        self.lora = lora
+    
+    def __enter__(self):
+        load_monkeypatch_deps()
+        self.model, self.tokenizer = load_model_and_lora(self.repo_id, self.model_path, self.lora)
+    
+    @modal.method(is_generator=True)
+    def predict(self, prompt):
+        return inference(self.model, self.tokenizer, prompt)
 
 # NOTE: The 3 functions below all run on an inference worker. load_deps must be the first fn called on the worker.
 def load_monkeypatch_deps():
-    from peft import PeftModel
     import alpaca_lora_4bit.autograd_4bit
-    from alpaca_lora_4bit.monkeypatch.peft_tuners_lora_monkey_patch import replace_peft_model_with_int4_lora_model
+    from alpaca_lora_4bit.monkeypatch.peft_tuners_lora_monkey_patch import (
+        replace_peft_model_with_int4_lora_model,
+    )
+    from peft import PeftModel
 
     alpaca_lora_4bit.autograd_4bit.use_new = True
     alpaca_lora_4bit.autograd_4bit.auto_switch = True
@@ -17,10 +43,10 @@ def load_monkeypatch_deps():
     replace_peft_model_with_int4_lora_model()
 
 def load_model_and_lora(repo_id, model_path, lora=None):
-    from peft import PeftModel
     from alpaca_lora_4bit.autograd_4bit import load_llama_model_4bit_low_ram
-    from huggingface_hub import try_to_load_from_cache, _CACHED_NO_EXIST
+    from huggingface_hub import _CACHED_NO_EXIST, try_to_load_from_cache
     from huggingface_hub.constants import HUGGINGFACE_HUB_CACHE
+    from peft import PeftModel
 
     filepath = try_to_load_from_cache(repo_id, filename=model_path)
     if filepath is _CACHED_NO_EXIST:
@@ -28,9 +54,9 @@ def load_model_and_lora(repo_id, model_path, lora=None):
         raise Exception('Model path does not exist')
     
     if not filepath:
-        raise Exception('Model path does not exist')
-        # download_model.call(repo_id)
-        # filepath = try_to_load_from_cache(repo_id, filename=model_path)
+        # raise Exception('Model path does not exist')
+        download_model.call(repo_id)
+        filepath = try_to_load_from_cache(repo_id, filename=model_path)
     
     model, tokenizer = load_llama_model_4bit_low_ram(repo_id, filepath, half=True)
     print('Loaded model and tokenizer for {}'.format(repo_id))
@@ -41,19 +67,75 @@ def load_model_and_lora(repo_id, model_path, lora=None):
     return model, tokenizer
 
 
+class Iteratorize:
+
+    """
+    Transforms a function that takes a callback
+    into a lazy iterator (generator).
+
+    Adapted from: https://stackoverflow.com/a/9969000
+    """
+
+    def __init__(self, func, kwargs=None, callback=None):
+        self.mfunc = func
+        self.c_callback = callback
+        self.q = Queue()
+        self.sentinel = object()
+        self.kwargs = kwargs or {}
+        self.stop_now = False
+
+        def _callback(val):
+            self.q.put(val)
+
+        def gentask():
+            try:
+                ret = self.mfunc(callback=_callback, **self.kwargs)
+            except ValueError as e:
+                print(e)
+                pass
+            except Exception as e:
+                print(e)
+                pass
+
+            self.q.put(self.sentinel)
+            if self.c_callback:
+                self.c_callback(ret)
+
+        self.thread = Thread(target=gentask)
+        self.thread.start()
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        obj = self.q.get(True, None)
+        if obj is self.sentinel:
+            raise StopIteration
+        else:
+            return obj
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop_now = True
+
+
 def inference(model, tokenizer, prompt):    
     import torch
     import transformers
 
 
-    class StopConversation(transformers.StoppingCriteria):
-        def __init__(self, tokenizer):
+    class StreamAndStop(transformers.StoppingCriteria):
+        def __init__(self, tokenizer, callback, stop='### Human:'):
             self.tokenizer = tokenizer
+            self.callback = callback
+            self.stop = stop
 
-        def __call__(self, input_ids, scores) -> bool:
-            # exit if the model generates a prompt which contains "### Human:", indicating the 
-            # model is erroneously hallucinating a human response
-            return self.tokenizer.decode(input_ids[0], skip_special_tokens=True).endswith("### Human:")
+        def __call__(self, input_ids, *args, **kwargs) -> bool:
+            prediction = self.tokenizer.decode(input_ids[0], skip_special_tokens=True)
+            self.callback(prediction)
+            return prediction.endswith(self.stop)
 
     generation_config = transformers.GenerationConfig(
             temperature=0.7,
@@ -66,24 +148,29 @@ def inference(model, tokenizer, prompt):
 
     start_ts = time.time()
 
-    # Generate response from model using stopping criteria to stream the output
-    with torch.no_grad():
-        out = model.generate(
-            generation_config=generation_config,
-            input_ids=batch["input_ids"].cuda(),
-            attention_mask=torch.ones_like(batch["input_ids"]).cuda(),
-            max_new_tokens=1024,
-            stopping_criteria=[StopConversation(tokenizer)]
-        )
+    def gen(callback):
+        # Generate response from model using stopping criteria to stream the output
+        with torch.no_grad():
+            out = model.generate(
+                generation_config=generation_config,
+                input_ids=batch["input_ids"].cuda(),
+                attention_mask=torch.ones_like(batch["input_ids"]).cuda(),
+                max_new_tokens=1024,
+                stopping_criteria=[StreamAndStop(tokenizer, callback)]
+            )
 
-        #  Send reply back to client
-        out_raw = out[0]
-        total_time = time.time() - start_ts
-        token_per_sec = len(out_raw) / total_time
-        
-        prediction = tokenizer.decode(out_raw, skip_special_tokens=True)
-        
-        print(f'{prediction}')
-        print(f'Generated {len(out_raw)} tokens in {total_time:.2f} seconds ({token_per_sec:.2f} tokens/sec)')
+    with Iteratorize(gen, None, None) as generator:
+        for output in generator:
+            yield generator
 
-        return prediction
+        # #  Send reply back to client
+        # out_raw = out[0]
+        # total_time = time.time() - start_ts
+        # token_per_sec = len(out_raw) / total_time
+        
+        # prediction = tokenizer.decode(out_raw, skip_special_tokens=True)
+        
+        # print(f'{prediction}')
+        # print(f'Generated {len(out_raw)} tokens in {total_time:.2f} seconds ({token_per_sec:.2f} tokens/sec)')
+
+        # return prediction

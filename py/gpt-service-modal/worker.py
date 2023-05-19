@@ -1,10 +1,11 @@
-import modal
+from typing import List, Literal, TypedDict
 
-from src.common import stub, cache_volume
+import modal
+from src.common import cache_volume, stub
 from src.download import download_model
 from src.factory import InferenceFactory
+from src.inference import Inference
 
-from typing import TypedDict, List, Literal
 
 class Message(TypedDict):
     role: Literal['System','Human','Assistant']
@@ -15,13 +16,7 @@ messages: List[Message] = [
     {'role': 'Human', 'content': 'What is a llama?'}
 ]
 
-factory = InferenceFactory(stub, {
-    "cloud": "gcp",
-    "gpu": "A100",
-    "image": stub.inference_image,
-    "secret": modal.Secret.from_name("hf-secret"),
-    "shared_volumes": {'/root/.cache/huggingface/hub': cache_volume},
-})
+factory = InferenceFactory()
 
 @stub.local_entrypoint()
 def main():
@@ -35,9 +30,12 @@ def main():
 ### Assistant:"""
     print(prompt)
 
-    fn = factory.get_model_inference_fn('TheBloke/vicuna-13B-1.1-GPTQ-4bit-128g', 'vicuna-13B-1.1-GPTQ-4bit-128g.latest.safetensors')
+    predict = factory.get_model_inference_fn('TheBloke/vicuna-13B-1.1-GPTQ-4bit-128g', 'vicuna-13B-1.1-GPTQ-4bit-128g.latest.safetensors')
+    predict(prompt)
 
-    with stub.run():
-        res = fn.call(prompt)
+    # fn = factory.get_model_inference_fn('TheBloke/vicuna-13B-1.1-GPTQ-4bit-128g', 'vicuna-13B-1.1-GPTQ-4bit-128g.latest.safetensors')
 
-        print(res)
+    # with stub.run():
+    #     res = fn.call(prompt)
+
+    #     print(res)
