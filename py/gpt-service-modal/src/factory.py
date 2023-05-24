@@ -15,5 +15,6 @@ class InferenceFactory:
 
         if not cls:
             cls = Inference.remote(repo_id, model_path)
+            self.model_map[model_def] = cls
 
         return cls.predict

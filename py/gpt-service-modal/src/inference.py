@@ -8,26 +8,31 @@ from .common import cache_volume, stub
 from .download import download_model
 
 
-@stub.cls(**{
-    "cloud": "gcp",
-    "gpu": "A100",
-    "image": stub.inference_image,
-    "secret": modal.Secret.from_name("hf-secret"),
-    "shared_volumes": {'/root/.cache/huggingface/hub': cache_volume},
-})
+@stub.cls(
+    **{
+        "cloud": "gcp",
+        "gpu": "A100",
+        "image": stub.inference_image,
+        "secret": modal.Secret.from_name("hf-secret"),
+        "shared_volumes": {"/root/.cache/huggingface/hub": cache_volume},
+    }
+)
 class Inference:
     def __init__(self, repo_id, model_path, lora=None):
         self.repo_id = repo_id
         self.model_path = model_path
         self.lora = lora
-    
+
     def __enter__(self):
         load_monkeypatch_deps()
-        self.model, self.tokenizer = load_model_and_lora(self.repo_id, self.model_path, self.lora)
-    
+        self.model, self.tokenizer = load_model_and_lora(
+            self.repo_id, self.model_path, self.lora
+        )
+
     @modal.method(is_generator=True)
     def predict(self, prompt):
         return inference(self.model, self.tokenizer, prompt)
+
 
 # NOTE: The 3 functions below all run on an inference worker. load_deps must be the first fn called on the worker.
 def load_monkeypatch_deps():
@@ -42,6 +47,7 @@ def load_monkeypatch_deps():
 
     replace_peft_model_with_int4_lora_model()
 
+
 def load_model_and_lora(repo_id, model_path, lora=None):
     from alpaca_lora_4bit.autograd_4bit import load_llama_model_4bit_low_ram
     from huggingface_hub import _CACHED_NO_EXIST, try_to_load_from_cache
@@ -51,19 +57,21 @@ def load_model_and_lora(repo_id, model_path, lora=None):
     filepath = try_to_load_from_cache(repo_id, filename=model_path)
     if filepath is _CACHED_NO_EXIST:
         # handle this case
-        raise Exception('Model path does not exist')
-    
+        raise Exception("Model path does not exist")
+
     if not filepath:
         # raise Exception('Model path does not exist')
         download_model.call(repo_id)
         filepath = try_to_load_from_cache(repo_id, filename=model_path)
-    
+
     model, tokenizer = load_llama_model_4bit_low_ram(repo_id, filepath, half=True)
-    print('Loaded model and tokenizer for {}'.format(repo_id))
+    print("Loaded model and tokenizer for {}".format(repo_id))
     if lora:
-        model = PeftModel.from_pretrained(model, lora, device_map={'': 0}, torch_dtype=torch.float32)
-        print('{} Lora Applied.'.format(lora))
-    
+        model = PeftModel.from_pretrained(
+            model, lora, device_map={"": 0}, torch_dtype=torch.float32
+        )
+        print("{} Lora Applied.".format(lora))
+
     return model, tokenizer
 
 
@@ -121,13 +129,12 @@ class Iteratorize:
         self.stop_now = True
 
 
-def inference(model, tokenizer, prompt):    
+def inference(model, tokenizer, prompt):
     import torch
     import transformers
 
-
     class StreamAndStop(transformers.StoppingCriteria):
-        def __init__(self, tokenizer, callback, stop='### Human:'):
+        def __init__(self, tokenizer, callback, stop="### Human:"):
             self.tokenizer = tokenizer
             self.callback = callback
             self.stop = stop
@@ -138,10 +145,8 @@ def inference(model, tokenizer, prompt):
             return prediction.endswith(self.stop)
 
     generation_config = transformers.GenerationConfig(
-            temperature=0.7,
-            top_p=0.70,
-            repetition_penalty=1/0.85
-        )
+        temperature=0.7, top_p=0.70, repetition_penalty=1 / 0.85
+    )
 
     # Tokenize prompt and generate against the model
     batch = tokenizer(prompt, return_tensors="pt")
@@ -156,20 +161,20 @@ def inference(model, tokenizer, prompt):
                 input_ids=batch["input_ids"].cuda(),
                 attention_mask=torch.ones_like(batch["input_ids"]).cuda(),
                 max_new_tokens=1024,
-                stopping_criteria=[StreamAndStop(tokenizer, callback)]
+                stopping_criteria=[StreamAndStop(tokenizer, callback)],
             )
 
     with Iteratorize(gen, None, None) as generator:
         for output in generator:
-            yield generator
+            yield output
 
         # #  Send reply back to client
         # out_raw = out[0]
         # total_time = time.time() - start_ts
         # token_per_sec = len(out_raw) / total_time
-        
+
         # prediction = tokenizer.decode(out_raw, skip_special_tokens=True)
-        
+
         # print(f'{prediction}')
         # print(f'Generated {len(out_raw)} tokens in {total_time:.2f} seconds ({token_per_sec:.2f} tokens/sec)')
 

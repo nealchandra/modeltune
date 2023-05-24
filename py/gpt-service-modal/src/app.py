@@ -14,8 +14,9 @@ from .factory import InferenceFactory
 
 
 class Message(TypedDict):
-    role: Literal['System','Human','Assistant']
+    role: Literal["System", "Human", "Assistant"]
     content: str
+
 
 @stub.function(
     image=stub.download_image,
@@ -25,11 +26,18 @@ class Message(TypedDict):
 @modal.asgi_app()
 def web():
     from fastapi import FastAPI, Request
+    from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import Response, StreamingResponse
     from fastapi.staticfiles import StaticFiles
     from pydantic import BaseModel
-    
+
     web_app = FastAPI()
+    web_app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["POST", "GET"],
+        allow_headers=["*"],
+    )
     factory = InferenceFactory()
 
     class ChatCompletionRequest(BaseModel):
@@ -42,25 +50,12 @@ def web():
     async def generate(request: ChatCompletionRequest):
         content = request.content
 
-        messages: List[Message] = [
-            {'role': 'System', 'content': 'You are a friendly AI assistant'},
-            {'role': 'Human', 'content': f'{content}'}
-        ]
-
-        prompt = ""
-        if messages[0]['role'] == 'System':
-            sys_prompt = messages.pop(0)['content']
-            prompt += f'{sys_prompt} ###\n'
-
-        prompt += ''.join(f"### {m['role']}: {m['content']} \n" for m in messages)
-        prompt += """
-    ### Assistant:"""
-        print(prompt)
-
-        predict = factory.get_model_inference_fn(request.repo_id, request.model_path, request.lora)
+        predict = factory.get_model_inference_fn(
+            request.repo_id, request.model_path, request.lora
+        )
 
         return StreamingResponse(
-            predict(prompt),
+            predict(content),
             media_type="text/event-stream",
         )
 
