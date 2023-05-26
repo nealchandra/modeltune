@@ -1,3 +1,4 @@
+import os
 import time
 from queue import Queue
 from threading import Thread
@@ -15,6 +16,8 @@ from .download import download_model
         "image": stub.inference_image,
         "secret": modal.Secret.from_name("hf-secret"),
         "shared_volumes": {"/root/.cache/huggingface/hub": cache_volume},
+        "concurrency_limit": 1,
+        "container_idle_timeout": 200,
     }
 )
 class Inference:
@@ -30,7 +33,7 @@ class Inference:
         )
 
     @modal.method(is_generator=True)
-    def predict(self, prompt):
+    def predict(self, prompt, generation_args={}):
         return inference(self.model, self.tokenizer, prompt)
 
 
@@ -49,10 +52,13 @@ def load_monkeypatch_deps():
 
 
 def load_model_and_lora(repo_id, model_path, lora=None):
+    import torch
     from alpaca_lora_4bit.autograd_4bit import load_llama_model_4bit_low_ram
-    from huggingface_hub import _CACHED_NO_EXIST, try_to_load_from_cache
+    from huggingface_hub import _CACHED_NO_EXIST, login, try_to_load_from_cache
     from huggingface_hub.constants import HUGGINGFACE_HUB_CACHE
     from peft import PeftModel
+
+    login(os.environ["HUGGINGFACE_TOKEN"])
 
     filepath = try_to_load_from_cache(repo_id, filename=model_path)
     if filepath is _CACHED_NO_EXIST:
@@ -66,9 +72,13 @@ def load_model_and_lora(repo_id, model_path, lora=None):
 
     model, tokenizer = load_llama_model_4bit_low_ram(repo_id, filepath, half=True)
     print("Loaded model and tokenizer for {}".format(repo_id))
+
     if lora:
         model = PeftModel.from_pretrained(
-            model, lora, device_map={"": 0}, torch_dtype=torch.float32
+            model,
+            lora,
+            device_map={"": 0},
+            torch_dtype=torch.float32,
         )
         print("{} Lora Applied.".format(lora))
 
@@ -160,22 +170,10 @@ def inference(model, tokenizer, prompt):
                 generation_config=generation_config,
                 input_ids=batch["input_ids"].cuda(),
                 attention_mask=torch.ones_like(batch["input_ids"]).cuda(),
-                max_new_tokens=1024,
+                max_new_tokens=200,
                 stopping_criteria=[StreamAndStop(tokenizer, callback)],
             )
 
     with Iteratorize(gen, None, None) as generator:
         for output in generator:
             yield output
-
-        # #  Send reply back to client
-        # out_raw = out[0]
-        # total_time = time.time() - start_ts
-        # token_per_sec = len(out_raw) / total_time
-
-        # prediction = tokenizer.decode(out_raw, skip_special_tokens=True)
-
-        # print(f'{prediction}')
-        # print(f'Generated {len(out_raw)} tokens in {total_time:.2f} seconds ({token_per_sec:.2f} tokens/sec)')
-
-        # return prediction

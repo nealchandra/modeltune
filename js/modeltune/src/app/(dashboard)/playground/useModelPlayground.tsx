@@ -3,24 +3,30 @@
 import * as React from 'react';
 
 const TEMPLATE_TEXT = `You are a helpful AI assistant ###
-### Human: 
+### Human: What is a llama?
+### Assistant:
 `;
 
 type EditorProps = {
   prompt: string;
 };
 
-type ModelPlaygroundParams = {
-  repoId?: string;
-  modelPath?: string;
+export type GenerationParams = {
+  repoId: string;
+  modelPath: string;
   lora?: string;
+
+  temperature: number;
+  maxTokens: number;
+
+  stoppingSequence: string;
 };
 
 export const useModelPlayground = ({
-  repoId = 'TheBloke/vicuna-13B-1.1-GPTQ-4bit-128g',
-  modelPath = 'vicuna-13B-1.1-GPTQ-4bit-128g.latest.safetensors',
+  repoId,
+  modelPath,
   lora,
-}: ModelPlaygroundParams): {
+}: GenerationParams): {
   html: string;
   onChange: (html: string) => void;
   onSubmit: () => void;
@@ -28,12 +34,14 @@ export const useModelPlayground = ({
 } => {
   const [html, setHtml] = React.useState(TEMPLATE_TEXT);
 
+  const [fnId, setFnId] = React.useState();
   const url = 'https://nealcorp--gpt-service-web.modal.run/generate';
   const [controller, setController] = React.useState(new AbortController());
 
   const submit = async (options: RequestInit, initial?: string) => {
     const controller = new AbortController();
     setController(controller);
+    setFnId(undefined);
 
     try {
       const resp = await fetch(url, {
@@ -52,6 +60,9 @@ export const useModelPlayground = ({
         if (done) {
           break;
         }
+
+        const fnId = resp.headers.get('Modal-Call-Id');
+        setFnId(fnId);
 
         const prediction = decoder.decode(value);
 
@@ -86,9 +97,9 @@ export const useModelPlayground = ({
     const options = {
       method: 'POST',
       body: JSON.stringify({
-        repo_id: 'TheBloke/vicuna-13B-1.1-GPTQ-4bit-128g',
-        model_path: 'vicuna-13B-1.1-GPTQ-4bit-128g.latest.safetensors',
-        lora,
+        repo_id: repoId,
+        model_path: modelPath,
+        // lora: 'nealchandra/vicuna-13b-lora-lt-full',
         content: prompt,
       }),
       headers: { 'Content-Type': 'application/json' },
@@ -97,10 +108,18 @@ export const useModelPlayground = ({
     submit(options, prompt);
   }, [repoId, modelPath, lora, html]);
 
+  const onCancel = React.useCallback(async () => {
+    controller.abort();
+    await fetch(
+      `https://nealcorp--gpt-service-web.modal.run/generation/${fnId}`,
+      { method: 'DELETE' }
+    );
+  }, [controller, fnId]);
+
   return {
     html,
     onChange,
     onSubmit,
-    onCancel: () => controller.abort(),
+    onCancel,
   };
 };
