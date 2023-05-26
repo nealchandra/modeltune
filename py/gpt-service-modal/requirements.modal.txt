@@ -13,3 +13,4 @@ huggingface_hub
 git+https://github.com/huggingface/peft.git@70af02a2bca5a63921790036b2c9430edf4037e2
 git+https://github.com/huggingface/transformers.git
 git+https://github.com/nealchandra/alpaca_lora_4bit@neal
+-e  ../gpt
