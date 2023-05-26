@@ -34,14 +34,14 @@ export const useModelPlayground = ({
 } => {
   const [html, setHtml] = React.useState(TEMPLATE_TEXT);
 
-  const [fnId, setFnId] = React.useState();
+  // const [fnId, setFnId] = React.useState();
   const url = 'https://nealcorp--gpt-service-web.modal.run/generate';
   const [controller, setController] = React.useState(new AbortController());
 
   const submit = async (options: RequestInit, initial?: string) => {
     const controller = new AbortController();
     setController(controller);
-    setFnId(undefined);
+    // setFnId(undefined);
 
     try {
       const resp = await fetch(url, {
@@ -61,8 +61,8 @@ export const useModelPlayground = ({
           break;
         }
 
-        const fnId = resp.headers.get('Modal-Call-Id');
-        setFnId(fnId);
+        // const fnId = resp.headers.get('Modal-Call-Id');
+        // setFnId(fnId);
 
         const prediction = decoder.decode(value);
 
@@ -73,7 +73,7 @@ export const useModelPlayground = ({
           setHtml(`<mark>${prediction}</mark>`);
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       if (err.name !== 'AbortError') {
         // setState(prevState => ({ ...prevState, ...{ error: err } }));
       }
@@ -110,11 +110,11 @@ export const useModelPlayground = ({
 
   const onCancel = React.useCallback(async () => {
     controller.abort();
-    await fetch(
-      `https://nealcorp--gpt-service-web.modal.run/generation/${fnId}`,
-      { method: 'DELETE' }
-    );
-  }, [controller, fnId]);
+    // await fetch(
+    //   `https://nealcorp--gpt-service-web.modal.run/generation/${fnId}`,
+    //   { method: 'DELETE' }
+    // );
+  }, [controller /* fnId */]);
 
   return {
     html,
