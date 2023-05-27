@@ -2,6 +2,8 @@
 
 import * as React from 'react';
 
+import sanitizeHtml from 'sanitize-html';
+
 const TEMPLATE_TEXT = `You are a helpful AI assistant ###
 ### Human: What is a llama?
 ### Assistant:
@@ -87,25 +89,35 @@ export const useModelPlayground = ({
 
   // clear marked text regex and set html
   const onChange = React.useCallback((html: string) => {
-    setHtml(html.replace('<mark>', '').replace('</mark>', ''));
+    const sanitized = sanitizeHtml(html, {
+      allowedTags: [],
+    });
+    setHtml(sanitized);
   }, []);
 
   const onSubmit = React.useCallback(() => {
+    console.log('html:');
     console.log(html);
-    const prompt = `${html}`.replace('<mark>', '').replace('</mark>', '');
 
-    const options = {
-      method: 'POST',
-      body: JSON.stringify({
-        repo_id: repoId,
-        model_path: modelPath,
-        // lora: 'nealchandra/vicuna-13b-lora-lt-full',
-        content: prompt,
-      }),
-      headers: { 'Content-Type': 'application/json' },
-    };
+    const sanitized = sanitizeHtml(html, {
+      allowedTags: ['mark'],
+    });
+    console.log('sanitized:');
+    console.log(sanitized);
+    // const prompt = `${html}`.replace('<mark>', '').replace('</mark>', '');
 
-    submit(options, prompt);
+    // const options = {
+    //   method: 'POST',
+    //   body: JSON.stringify({
+    //     repo_id: repoId,
+    //     model_path: modelPath,
+    //     // lora: 'nealchandra/vicuna-13b-lora-lt-full',
+    //     content: prompt,
+    //   }),
+    //   headers: { 'Content-Type': 'application/json' },
+    // };
+
+    // submit(options, prompt);
   }, [repoId, modelPath, lora, html]);
 
   const onCancel = React.useCallback(async () => {
