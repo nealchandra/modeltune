@@ -1,10 +1,8 @@
 import os
-import time
-from queue import Queue
-from threading import Thread
+from typing import Optional
 
 import modal
-from gpt.llm import LlamaLLm
+from modal.cls import ClsMixin
 
 from .common import cache_volume, stub
 from .download import download_model
@@ -21,18 +19,35 @@ from .download import download_model
         "container_idle_timeout": 200,
     }
 )
-class Inference:
-    def __init__(self, repo_id, model_path, lora=None):
+class Inference(ClsMixin):
+    def __init__(
+        self,
+        repo_id: str,
+        model_path: str,
+        lora: Optional[str] = None,
+    ):
         self.repo_id = repo_id
         self.model_path = model_path
-        self.lora = lora
 
     def __enter__(self):
-        load_monkeypatch_deps()
-        self.model, self.tokenizer = load_model_and_lora(
-            self.repo_id, self.model_path, self.lora
+        from gpt.huggingface import HuggingfaceClient
+        from gpt.llm import LlamaLLM
+
+        self.llm = LlamaLLM()
+        client = HuggingfaceClient(
+            os.environ["HUGGINGFACE_TOKEN"], download_model_fn=download_model.call
         )
+        self.llm.set_client(client)
+        self.llm.load_model(self.repo_id, self.model_path)
 
     @modal.method(is_generator=True)
-    def predict(self, prompt, generation_args={}):
-        return inference(self.model, self.tokenizer, prompt)
+    def predict(self, prompt, lora=None, generation_args={}):
+        from peft import PeftModel
+
+        if isinstance(self.llm.model, PeftModel):
+            self.llm.remove_lora()
+
+        if lora is not None:
+            self.llm.apply_lora(lora)
+
+        return self.llm.generate_streaming(prompt)

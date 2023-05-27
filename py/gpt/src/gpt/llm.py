@@ -72,7 +72,7 @@ class LlamaLLM:
 
         self.model = PeftModel.get_base_model(self.model)
 
-    def generate_streaming(self, prompt):
+    def generate_streaming(self, prompt: str):
         generation_config = GenerationConfig(
             temperature=0.7, top_p=0.70, repetition_penalty=1 / 0.85
         )

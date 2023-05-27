@@ -1,7 +1,7 @@
 import modal
 
 stub = modal.Stub(name="gpt-service")
-cache_volume = modal.SharedVolume().persist('model-cache')
+cache_volume = modal.SharedVolume().persist("model-cache")
 # inference_dict = modal.Dict().persist('inference-state')
 
 stub.inference_image = (
@@ -14,13 +14,11 @@ stub.inference_image = (
     )
     .pip_install("numpy", pre=True)
     .pip_install("torch", index_url="https://download.pytorch.org/whl/cu118")
+    .copy_local_dir("../../py/gpt", "/gpt")
     .pip_install_from_requirements("requirements.modal.txt")
-    # .env({"HUGGING"})
 )
 
-stub.download_image = (
-    modal.Image.debian_slim().pip_install("huggingface_hub")
-)
+stub.download_image = modal.Image.debian_slim().pip_install("huggingface_hub")
 
 # stub.inference_image.inference_cache = inference_dict
 # stub.download_image.inference_cache = inference_dict

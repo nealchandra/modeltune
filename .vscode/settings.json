@@ -15,6 +15,5 @@
       "source.organizeImports": true
     }
   },
-  "isort.args": ["--profile", "black"],
-  "python.autoComplete.extraPaths": ["py/gpt"]
+  "isort.args": ["--profile", "black"]
 }

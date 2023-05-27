@@ -4,12 +4,14 @@ API routes for transcription, language model generation and text-to-speech.
 """
 
 import json
+import os
 from pathlib import Path
 from typing import List, Literal, Optional, TypedDict
 
 import modal
 
 from .common import stub
+from .download import download_model
 from .inference import Inference
 
 
