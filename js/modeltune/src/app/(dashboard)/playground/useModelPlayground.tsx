@@ -89,35 +89,27 @@ export const useModelPlayground = ({
 
   // clear marked text regex and set html
   const onChange = React.useCallback((html: string) => {
-    const sanitized = sanitizeHtml(html, {
-      allowedTags: [],
-    });
-    setHtml(sanitized);
+    setHtml(html.replace(/<mark>/g, '').replace(/<\/mark>/g, ''));
   }, []);
 
   const onSubmit = React.useCallback(() => {
-    console.log('html:');
-    console.log(html);
-
     const sanitized = sanitizeHtml(html, {
-      allowedTags: ['mark'],
+      allowedTags: [],
     });
-    console.log('sanitized:');
-    console.log(sanitized);
-    // const prompt = `${html}`.replace('<mark>', '').replace('</mark>', '');
+    const prompt = `${html}`.replace('<mark>', '').replace('</mark>', '');
 
-    // const options = {
-    //   method: 'POST',
-    //   body: JSON.stringify({
-    //     repo_id: repoId,
-    //     model_path: modelPath,
-    //     // lora: 'nealchandra/vicuna-13b-lora-lt-full',
-    //     content: prompt,
-    //   }),
-    //   headers: { 'Content-Type': 'application/json' },
-    // };
+    const options = {
+      method: 'POST',
+      body: JSON.stringify({
+        repo_id: repoId,
+        model_path: modelPath,
+        // lora: 'nealchandra/vicuna-13b-lora-lt-full',
+        content: prompt,
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    };
 
-    // submit(options, prompt);
+    submit(options, prompt);
   }, [repoId, modelPath, lora, html]);
 
   const onCancel = React.useCallback(async () => {
