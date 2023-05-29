@@ -41,7 +41,8 @@ class Inference(ClsMixin):
         self.llm.load_model(self.repo_id, self.model_path)
 
     @modal.method(is_generator=True)
-    def predict(self, prompt, lora=None, generation_args={}):
+    def predict(self, prompt, generation_args={}, lora=None):
+        from gpt.llm import GenerationArgs
         from peft import PeftModel
 
         if isinstance(self.llm.model, PeftModel):
@@ -50,4 +51,4 @@ class Inference(ClsMixin):
         if lora is not None:
             self.llm.apply_lora(lora)
 
-        return self.llm.generate_streaming(prompt)
+        return self.llm.generate_streaming(generation_args, prompt)

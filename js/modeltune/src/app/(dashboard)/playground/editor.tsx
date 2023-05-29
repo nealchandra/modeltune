@@ -17,6 +17,7 @@ export const Editor = () => {
       repoId: 'TheBloke/vicuna-13B-1.1-GPTQ-4bit-128g',
       modelPath: 'vicuna-13B-1.1-GPTQ-4bit-128g.latest.safetensors',
       temperature: 0.7,
+      topP: 0.7,
       maxTokens: 256,
       stoppingSequence: '### Human:',
     });
@@ -60,6 +61,21 @@ export const Editor = () => {
               setGenerationParams({
                 ...generationParams,
                 temperature: value?.[0] ?? generationParams.temperature,
+              });
+            }}
+          />
+          <GenerationParamSlider
+            title="Top P"
+            hoverText="If set to float < 1, only the smallest set of most probable tokens with probabilities that add up to
+            `top_p` or higher are kept for generation."
+            min={0.05}
+            max={1}
+            step={0.01}
+            defaultValue={[generationParams.topP]}
+            onValueChange={(value) => {
+              setGenerationParams({
+                ...generationParams,
+                topP: value?.[0] ?? generationParams.topP,
               });
             }}
           />

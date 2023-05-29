@@ -10,6 +10,9 @@ class HuggingfaceClient:
 
         self._download_model = download_model_fn
 
+    def get_cache_dir(self):
+        return self.cache_dir
+
     def download_model(self, repo_id: str):
         # login(self.token)
         self._download_model(

@@ -20,6 +20,7 @@ export type GenerationParams = {
 
   temperature: number;
   maxTokens: number;
+  topP: number;
 
   stoppingSequence: string;
 };
@@ -28,6 +29,10 @@ export const useModelPlayground = ({
   repoId,
   modelPath,
   lora,
+  temperature,
+  maxTokens,
+  topP,
+  stoppingSequence,
 }: GenerationParams): {
   html: string;
   onChange: (html: string) => void;
@@ -103,8 +108,14 @@ export const useModelPlayground = ({
       body: JSON.stringify({
         repo_id: repoId,
         model_path: modelPath,
-        // lora: 'nealchandra/vicuna-13b-lora-lt-full',
+        lora: 'nealchandra/vicuna-13b-lora-lt-full',
         content: prompt,
+        generation_args: {
+          temperature,
+          max_tokens: maxTokens,
+          top_p: topP,
+          stopping_sequence: stoppingSequence,
+        },
       }),
       headers: { 'Content-Type': 'application/json' },
     };

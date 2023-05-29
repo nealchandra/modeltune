@@ -1,5 +1,5 @@
 import time
-from typing import Literal, Optional
+from typing import Literal, Optional, TypedDict
 
 import alpaca_lora_4bit.autograd_4bit
 import torch
@@ -25,6 +25,14 @@ alpaca_lora_4bit.autograd_4bit.auto_switch = True
 from . import utils
 
 replace_peft_model_with_int4_lora_model()
+
+
+class GenerationArgs(TypedDict):
+    top_p: Optional[float]
+    top_k: Optional[int]
+    temperature: Optional[float]
+    repetiton_penalty: Optional[float]
+    stopping_sequence: Optional[str]
 
 
 class LlamaLLM:
@@ -57,12 +65,15 @@ class LlamaLLM:
         if not self.model:
             raise Exception("Model not loaded")
 
+        if not self.client:
+            raise Exception("Client not set")
+
         self.model = PeftModel.from_pretrained(
             self.model,
             lora,
             device_map={"": 0},
             torch_dtype=torch.float32,
-            cache_dir=self.cache_dir,
+            cache_dir=self.client.cache_dir,
         )
         print("{} Lora Applied.".format(lora))
 
@@ -72,9 +83,12 @@ class LlamaLLM:
 
         self.model = PeftModel.get_base_model(self.model)
 
-    def generate_streaming(self, prompt: str):
+    def generate_streaming(self, generation_config: GenerationArgs, prompt: str):
         generation_config = GenerationConfig(
-            temperature=0.7, top_p=0.70, repetition_penalty=1 / 0.85
+            temperature=0.7,
+            top_p=0.70,
+            repetition_penalty=1 / 0.85,
+            **generation_config,
         )
 
         # Tokenize prompt and generate against the model
@@ -90,7 +104,13 @@ class LlamaLLM:
                     input_ids=batch["input_ids"].cuda(),
                     attention_mask=torch.ones_like(batch["input_ids"]).cuda(),
                     max_new_tokens=200,
-                    stopping_criteria=[utils.StreamAndStop(self.tokenizer, callback)],
+                    stopping_criteria=[
+                        utils.StreamAndStop(
+                            self.tokenizer,
+                            callback,
+                            stop=generation_config.stopping_sequence or "### Human:",
+                        )
+                    ],
                 )
 
         with utils.Iteratorize(gen, None, None) as generator:

@@ -71,10 +71,7 @@ def web():
         lora: Optional[str]
         content: str
 
-    # x = Inference.remote(
-    #     "TheBloke/vicuna-13B-1.1-GPTQ-4bit-128g",
-    #     "vicuna-13B-1.1-GPTQ-4bit-128g.latest.safetensors",
-    # )
+        generation_args: dict
 
     @web_app.get("/stats")
     async def static(request: StatsRequest = Depends()):
@@ -92,14 +89,17 @@ def web():
     async def generate(body: ChatCompletionRequest, request: Request):
         content = body.content
 
-        # predict = Inference.remote(body.repo_id, body.model_path, None).predict
         predict = Inference.remote(
             "TheBloke/vicuna-13B-1.1-GPTQ-4bit-128g",
             "vicuna-13B-1.1-GPTQ-4bit-128g.latest.safetensors",
         ).predict
 
         return StreamingResponse(
-            predict(content),
+            predict(
+                content,
+                body.generation_args,
+                body.lora,
+            ),
             headers={
                 "Modal-Call-ID": predict.object_id,
                 "Access-Control-Expose-Headers": "Modal-Call-ID",
