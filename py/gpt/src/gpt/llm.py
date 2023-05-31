@@ -74,6 +74,7 @@ class LlamaLLM:
             device_map={"": 0},
             torch_dtype=torch.float32,
             cache_dir=self.client.cache_dir,
+            use_auth_token=self.client.token,
         )
         print("{} Lora Applied.".format(lora))
 

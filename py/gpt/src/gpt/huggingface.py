@@ -19,5 +19,5 @@ class HuggingfaceClient:
             repo_id=repo_id,
             ignore_patterns="*.pt",
             cache_dir=self.cache_dir,
-            auth_token=self.token,
+            token=self.token,
         )
