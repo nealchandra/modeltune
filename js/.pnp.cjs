@@ -2239,16 +2239,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "linkType": "HARD"\
         }]\
       ]],\
-      ["bindings", [\
-        ["npm:1.5.0", {\
-          "packageLocation": "./.yarn/cache/bindings-npm-1.5.0-77ce1d213c-65b6b48095.zip/node_modules/bindings/",\
-          "packageDependencies": [\
-            ["bindings", "npm:1.5.0"],\
-            ["file-uri-to-path", "npm:1.0.0"]\
-          ],\
-          "linkType": "HARD"\
-        }]\
-      ]],\
       ["bplist-parser", [\
         ["npm:0.2.0", {\
           "packageLocation": "./.yarn/cache/bplist-parser-npm-0.2.0-91a681e495-d5339dd16a.zip/node_modules/bplist-parser/",\
@@ -2827,16 +2817,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/detect-node-es-npm-1.1.0-2ad57e0b50-e46307d726.zip/node_modules/detect-node-es/",\
           "packageDependencies": [\
             ["detect-node-es", "npm:1.1.0"]\
-          ],\
-          "linkType": "HARD"\
-        }]\
-      ]],\
-      ["dev", [\
-        ["npm:0.1.3", {\
-          "packageLocation": "./.yarn/cache/dev-npm-0.1.3-32cc08dee4-a28f822a98.zip/node_modules/dev/",\
-          "packageDependencies": [\
-            ["dev", "npm:0.1.3"],\
-            ["inotify", "npm:1.4.6"]\
           ],\
           "linkType": "HARD"\
         }]\
@@ -3978,15 +3958,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "linkType": "HARD"\
         }]\
       ]],\
-      ["file-uri-to-path", [\
-        ["npm:1.0.0", {\
-          "packageLocation": "./.yarn/cache/file-uri-to-path-npm-1.0.0-1043ac6206-b648580bdd.zip/node_modules/file-uri-to-path/",\
-          "packageDependencies": [\
-            ["file-uri-to-path", "npm:1.0.0"]\
-          ],\
-          "linkType": "HARD"\
-        }]\
-      ]],\
       ["fill-range", [\
         ["npm:7.0.1", {\
           "packageLocation": "./.yarn/cache/fill-range-npm-7.0.1-b8b1817caa-cc283f4e65.zip/node_modules/fill-range/",\
@@ -4637,18 +4608,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/inherits-npm-2.0.4-c66b3957a0-4a48a73384.zip/node_modules/inherits/",\
           "packageDependencies": [\
             ["inherits", "npm:2.0.4"]\
-          ],\
-          "linkType": "HARD"\
-        }]\
-      ]],\
-      ["inotify", [\
-        ["npm:1.4.6", {\
-          "packageLocation": "./.yarn/unplugged/inotify-npm-1.4.6-d8a5655766/node_modules/inotify/",\
-          "packageDependencies": [\
-            ["inotify", "npm:1.4.6"],\
-            ["bindings", "npm:1.5.0"],\
-            ["nan", "npm:2.17.0"],\
-            ["node-gyp", "npm:9.3.1"]\
           ],\
           "linkType": "HARD"\
         }]\
@@ -5511,7 +5470,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["autoprefixer", "virtual:94baf1363c147f745ccb031bdb77fb69b7fbca68d8941504db11281fe6a42afba84dd9cdf80953bce21e9f6f86d8307eb0dba0db875c2f2b23d0d3b953c9ab3d#npm:10.4.14"],\
             ["class-variance-authority", "virtual:94baf1363c147f745ccb031bdb77fb69b7fbca68d8941504db11281fe6a42afba84dd9cdf80953bce21e9f6f86d8307eb0dba0db875c2f2b23d0d3b953c9ab3d#npm:0.6.0"],\
             ["clsx", "npm:1.2.1"],\
-            ["dev", "npm:0.1.3"],\
             ["eslint", "npm:8.40.0"],\
             ["eslint-config-next", "virtual:94baf1363c147f745ccb031bdb77fb69b7fbca68d8941504db11281fe6a42afba84dd9cdf80953bce21e9f6f86d8307eb0dba0db875c2f2b23d0d3b953c9ab3d#npm:13.4.1"],\
             ["lucide-react", "virtual:94baf1363c147f745ccb031bdb77fb69b7fbca68d8941504db11281fe6a42afba84dd9cdf80953bce21e9f6f86d8307eb0dba0db875c2f2b23d0d3b953c9ab3d#npm:0.220.0"],\
@@ -5577,16 +5535,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["any-promise", "npm:1.3.0"],\
             ["object-assign", "npm:4.1.1"],\
             ["thenify-all", "npm:1.6.0"]\
-          ],\
-          "linkType": "HARD"\
-        }]\
-      ]],\
-      ["nan", [\
-        ["npm:2.17.0", {\
-          "packageLocation": "./.yarn/unplugged/nan-npm-2.17.0-bf36a21d6f/node_modules/nan/",\
-          "packageDependencies": [\
-            ["nan", "npm:2.17.0"],\
-            ["node-gyp", "npm:9.3.1"]\
           ],\
           "linkType": "HARD"\
         }]\
