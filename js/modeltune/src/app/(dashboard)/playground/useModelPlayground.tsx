@@ -108,7 +108,7 @@ export const useModelPlayground = ({
       body: JSON.stringify({
         repo_id: repoId,
         model_path: modelPath,
-        lora: 'nealchandra/vicuna-13b-lora-lt-full',
+        // lora: 'nealchandra/vicuna-13b-lora-lt-full',
         content: prompt,
         generation_args: {
           temperature,

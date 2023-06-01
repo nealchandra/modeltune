@@ -16,7 +16,7 @@ from .download import download_model
         "secret": modal.Secret.from_name("hf-secret"),
         "shared_volumes": {"/root/.cache/huggingface/hub": cache_volume},
         "concurrency_limit": 1,
-        "container_idle_timeout": 200,
+        "container_idle_timeout": 300,
     }
 )
 class Inference(ClsMixin):
