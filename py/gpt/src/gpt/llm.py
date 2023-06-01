@@ -1,3 +1,4 @@
+import os
 import time
 from typing import Literal, Optional, TypedDict
 
@@ -68,6 +69,11 @@ class LlamaLLM:
         if not self.client:
             raise Exception("Client not set")
 
+        filepath = try_to_load_from_cache(lora, filename='adapter_config.json')
+        if not filepath:
+            self.client.download_model(lora)
+
+        login(self.client.token)
         self.model = PeftModel.from_pretrained(
             self.model,
             lora,
@@ -85,12 +91,12 @@ class LlamaLLM:
         self.model = PeftModel.get_base_model(self.model)
 
     def generate_streaming(self, generation_config: GenerationArgs, prompt: str):
-        generation_config = GenerationConfig(
-            temperature=0.7,
-            top_p=0.70,
-            repetition_penalty=1 / 0.85,
+        generation_config = GenerationConfig(**{
+            'temperature': 0.7,
+            'top_p': 0.70,
+            'repetition_penalty': 1 / 0.85,
             **generation_config,
-        )
+        })
 
         # Tokenize prompt and generate against the model
         batch = self.tokenizer(prompt, return_tensors="pt")

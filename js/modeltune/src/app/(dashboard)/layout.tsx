@@ -14,6 +14,10 @@ const DashboardNavItems = [
     title: 'Playground',
     href: '/playground',
   },
+  {
+    title: 'Tune',
+    href: '/tune',
+  },
 ];
 
 export default async function DashboardLayout({
