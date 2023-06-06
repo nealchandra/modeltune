@@ -24,11 +24,12 @@ export function GenerationParamInput({
   hoverText,
   onValueChange,
 }: GenerationParamInputProps) {
-  const [value, setValue] = React.useState(defaultValue);
+  const [value, setValueState] = React.useState(defaultValue);
 
-  React.useEffect(() => {
+  const setValue = (val: typeof value) => {
+    setValueState(val);
     onValueChange?.(value);
-  }, [value, onValueChange]);
+  };
 
   return (
     <div className="grid gap-2 pt-2">
