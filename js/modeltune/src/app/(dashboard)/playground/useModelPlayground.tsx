@@ -4,10 +4,9 @@ import * as React from 'react';
 
 import sanitizeHtml from 'sanitize-html';
 
-const TEMPLATE_TEXT = `You are a helpful AI assistant ###
-### Human: What is a llama?
-### Assistant:
-`;
+const TEMPLATE_TEXT = `You are a literary AI assistant specializing in erotic short stories ###
+### Human: Write an excerpt from erotic short story about a loving couple
+### Assistant:`;
 
 type EditorProps = {
   prompt: string;
@@ -108,7 +107,7 @@ export const useModelPlayground = ({
       body: JSON.stringify({
         repo_id: repoId,
         model_path: modelPath,
-        // lora: 'nealchandra/vicuna-13b-lora-lt-full',
+        lora: 'nealchandra/vicuna-13b-lora-lt-full',
         content: prompt,
         generation_args: {
           temperature,
