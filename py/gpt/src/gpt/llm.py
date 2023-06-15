@@ -59,17 +59,10 @@ class LlamaLLM:
             # handle this case
             raise Exception("Model path does not exist")
 
-        print("filepath", filepath)
-
         if not filepath:
             # raise Exception('Model path does not exist')
             self.client.download_model(repo_id)
             filepath = try_to_load_from_cache(repo_id, filename=model_path)
-
-        print("filepath", filepath)
-
-        x = scan_cache_dir()
-        print(x.__repr__())
 
         self.model, self.tokenizer = load_llama_model_4bit_low_ram(
             repo_id, filepath, half=True
@@ -92,7 +85,7 @@ class LlamaLLM:
             lora,
             device_map={"": 0},
             torch_dtype=torch.float32,
-            # cache_dir=self.client.cache_dir,
+            cache_dir=self.client.cache_dir,
             use_auth_token=self.client.token,
         )
         print("{} Lora Applied.".format(lora))

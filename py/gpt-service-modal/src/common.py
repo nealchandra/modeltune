@@ -14,8 +14,9 @@ stub.inference_image = (
     )
     .pip_install("numpy", pre=True)
     .pip_install("torch", index_url="https://download.pytorch.org/whl/cu118")
-    .copy_local_dir("../../py/gpt", "/gpt")
     .pip_install_from_requirements("requirements.modal.txt")
+    .copy_local_dir("../../py/gpt", "/gpt")
+    .run_commands('pip install ../gpt')
 )
 
 stub.download_image = modal.Image.debian_slim().pip_install("huggingface_hub")
