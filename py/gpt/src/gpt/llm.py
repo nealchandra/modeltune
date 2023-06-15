@@ -8,7 +8,12 @@ from alpaca_lora_4bit.autograd_4bit import load_llama_model_4bit_low_ram
 from alpaca_lora_4bit.monkeypatch.peft_tuners_lora_monkey_patch import (
     replace_peft_model_with_int4_lora_model,
 )
-from huggingface_hub import _CACHED_NO_EXIST, login, try_to_load_from_cache
+from huggingface_hub import (
+    _CACHED_NO_EXIST,
+    login,
+    scan_cache_dir,
+    try_to_load_from_cache,
+)
 from huggingface_hub.constants import HUGGINGFACE_HUB_CACHE
 from peft import PeftModel
 from transformers import (
@@ -54,10 +59,18 @@ class LlamaLLM:
             # handle this case
             raise Exception("Model path does not exist")
 
+        print("filepath", filepath)
+
         if not filepath:
             # raise Exception('Model path does not exist')
             self.client.download_model(repo_id)
             filepath = try_to_load_from_cache(repo_id, filename=model_path)
+
+        print("filepath", filepath)
+
+        x = scan_cache_dir()
+        print(x.__repr__())
+
         self.model, self.tokenizer = load_llama_model_4bit_low_ram(
             repo_id, filepath, half=True
         )
@@ -69,7 +82,7 @@ class LlamaLLM:
         if not self.client:
             raise Exception("Client not set")
 
-        filepath = try_to_load_from_cache(lora, filename='adapter_config.json')
+        filepath = try_to_load_from_cache(lora, filename="adapter_config.json")
         if not filepath:
             self.client.download_model(lora)
 
@@ -79,7 +92,7 @@ class LlamaLLM:
             lora,
             device_map={"": 0},
             torch_dtype=torch.float32,
-            cache_dir=self.client.cache_dir,
+            # cache_dir=self.client.cache_dir,
             use_auth_token=self.client.token,
         )
         print("{} Lora Applied.".format(lora))
@@ -91,12 +104,14 @@ class LlamaLLM:
         self.model = PeftModel.get_base_model(self.model)
 
     def generate_streaming(self, generation_config: GenerationArgs, prompt: str):
-        generation_config = GenerationConfig(**{
-            'temperature': 0.7,
-            'top_p': 0.70,
-            'repetition_penalty': 1 / 0.85,
-            **generation_config,
-        })
+        generation_config = GenerationConfig(
+            **{
+                "temperature": 0.7,
+                "top_p": 0.70,
+                "repetition_penalty": 1 / 0.85,
+                **generation_config,
+            }
+        )
 
         # Tokenize prompt and generate against the model
         batch = self.tokenizer(prompt, return_tensors="pt")

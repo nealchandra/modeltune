@@ -26,6 +26,8 @@ class Inference(ClsMixin):
         model_path: str,
         lora: Optional[str] = None,
     ):
+        print("repo_id", repo_id)
+        print("model_path", model_path)
         self.repo_id = repo_id
         self.model_path = model_path
 
@@ -38,6 +40,8 @@ class Inference(ClsMixin):
             os.environ["HUGGINGFACE_TOKEN"], download_model_fn=download_model.call
         )
         self.llm.set_client(client)
+        print("repo_id", self.repo_id)
+        print("model_path", self.model_path)
         self.llm.load_model(self.repo_id, self.model_path)
 
     @modal.method(is_generator=True)

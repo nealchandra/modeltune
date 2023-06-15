@@ -81,7 +81,7 @@ def web():
 
         stats = Inference.remote(
             "TheBloke/vicuna-13B-1.1-GPTQ-4bit-128g",
-            "vicuna-13B-1.1-GPTQ-4bit-128g.latest.safetensors",
+            "vicuna-13B-1.1-GPTQ-4bit-128g.compat.no-act-order.pt",
         ).predict.get_current_stats()
         return stats
 
@@ -91,7 +91,7 @@ def web():
 
         predict = Inference.remote(
             "TheBloke/vicuna-13B-1.1-GPTQ-4bit-128g",
-            "vicuna-13B-1.1-GPTQ-4bit-128g.latest.safetensors",
+            "vicuna-13B-1.1-GPTQ-4bit-128g.compat.no-act-order.pt",
         ).predict
 
         return StreamingResponse(
