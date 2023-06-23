@@ -21,7 +21,7 @@ from transformers import AutoConfig, AutoTokenizer, LlamaForCausalLM, LlamaToken
 MICRO_BATCH_SIZE = 4  # this could actually be 5 but i like powers of 2
 BATCH_SIZE = 256
 GRADIENT_ACCUMULATION_STEPS = BATCH_SIZE // MICRO_BATCH_SIZE
-#EPOCHS = 3  # we don't need 3 tbh
+# EPOCHS = 3  # we don't need 3 tbh
 EPOCHS = 1
 LEARNING_RATE = 3e-4  # the Karpathy constant
 CUTOFF_LEN = 256  # 256 accounts for about 96% of the data
@@ -33,15 +33,14 @@ LORA_DROPOUT = 0.05
 # LORA_ALPHA = 8
 # LORA_DROPOUT = 0.1
 
+
 def finetune(repo_id, dataset_repo_id, output_path):
     model = LlamaForCausalLM.from_pretrained(
         repo_id,
         load_in_8bit=True,
         device_map="auto",
     )
-    tokenizer = LlamaTokenizer.from_pretrained(
-       repo_id, add_eos_token=True
-    )
+    tokenizer = LlamaTokenizer.from_pretrained(repo_id, add_eos_token=True)
 
     model = prepare_model_for_int8_training(model)
 
@@ -87,7 +86,9 @@ def finetune(repo_id, dataset_repo_id, output_path):
             output_dir=output_path,
             save_total_limit=3,
         ),
-        data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
+        data_collator=transformers.DataCollatorForLanguageModeling(
+            tokenizer, mlm=False
+        ),
     )
     model.config.use_cache = False
     trainer.train(resume_from_checkpoint=False)

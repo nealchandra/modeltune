@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Literal, Optional, TypedDict
+from typing import Literal, Optional, TypedDict, Union
 
 import alpaca_lora_4bit.autograd_4bit
 import torch
@@ -15,11 +15,13 @@ from huggingface_hub import (
     try_to_load_from_cache,
 )
 from huggingface_hub.constants import HUGGINGFACE_HUB_CACHE
-from peft import PeftModel
+from peft import LoraConfig, PeftModel, get_peft_model, prepare_model_for_int8_training
 from transformers import (
     GenerationConfig,
     LlamaForCausalLM,
     LlamaTokenizer,
+    PreTrainedModel,
+    PreTrainedTokenizer,
     StoppingCriteria,
 )
 
@@ -30,7 +32,20 @@ alpaca_lora_4bit.autograd_4bit.auto_switch = True
 
 from . import utils
 
-replace_peft_model_with_int4_lora_model()
+MICRO_BATCH_SIZE = 4  # this could actually be 5 but i like powers of 2
+BATCH_SIZE = 256
+GRADIENT_ACCUMULATION_STEPS = BATCH_SIZE // MICRO_BATCH_SIZE
+# EPOCHS = 3  # we don't need 3 tbh
+EPOCHS = 1
+LEARNING_RATE = 3e-4  # the Karpathy constant
+CUTOFF_LEN = 256  # 256 accounts for about 96% of the data
+LORA_R = 8
+LORA_ALPHA = 16
+LORA_DROPOUT = 0.05
+
+## POTENTIAL ARGS
+# LORA_ALPHA = 8
+# LORA_DROPOUT = 0.1
 
 
 class GenerationArgs(TypedDict):
@@ -41,32 +56,14 @@ class GenerationArgs(TypedDict):
     stopping_sequence: Optional[str]
 
 
-class LlamaLLM:
-    model_type: Literal["Llama"] = "Llama"
+class LLM:
+    model_type: Union[Literal["Llama"], Literal["Falcon"]]
     client: Optional[HuggingfaceClient]
-    model: Optional[LlamaForCausalLM]
-    tokenizer: Optional[LlamaTokenizer]
+    model: Optional[PreTrainedModel]
+    tokenizer: Optional[PreTrainedTokenizer]
 
     def set_client(self, client: HuggingfaceClient):
         self.client = client
-
-    def load_model(self, repo_id: str, model_path: str):
-        if not self.client:
-            raise Exception("Client not set")
-
-        filepath = try_to_load_from_cache(repo_id, filename=model_path)
-        if filepath is _CACHED_NO_EXIST:
-            # handle this case
-            raise Exception("Model path does not exist")
-
-        if not filepath:
-            # raise Exception('Model path does not exist')
-            self.client.download_model(repo_id)
-            filepath = try_to_load_from_cache(repo_id, filename=model_path)
-
-        self.model, self.tokenizer = load_llama_model_4bit_low_ram(
-            repo_id, filepath, half=True
-        )
 
     def apply_lora(self, lora: str):
         if not self.model:
@@ -95,6 +92,62 @@ class LlamaLLM:
             raise Exception("Model not loaded")
 
         self.model = PeftModel.get_base_model(self.model)
+
+    def train(self, train_args):
+        self.model = prepare_model_for_int8_training(self.model)
+
+        config = LoraConfig(
+            r=LORA_R,
+            lora_alpha=LORA_ALPHA,
+            target_modules=["q_proj", "v_proj"],
+            lora_dropout=LORA_DROPOUT,
+            bias="none",
+            task_type=TaskType.CAUSAL_LM,
+        )
+        model = get_peft_model(model, config)
+        self.tokenizer.pad_token_id = (
+            0  # unk. we want this to be different from the eos token
+        )
+        data = load_dataset(dataset_repo_id)
+
+        from src.prompts.alpaca import prompt
+
+        def tokenize(data):
+            result = tokenizer(
+                prompt.generate_prompt(data),
+                truncation=True,
+                max_length=CUTOFF_LEN + 1,
+                padding="max_length",
+            )
+            return {
+                "input_ids": result["input_ids"][:-1],
+                "attention_mask": result["attention_mask"][:-1],
+            }
+
+        data = data.shuffle().map(lambda x: tokenize(x))
+
+        trainer = transformers.Trainer(
+            model=model,
+            train_dataset=data["train"],
+            args=transformers.TrainingArguments(
+                per_device_train_batch_size=MICRO_BATCH_SIZE,
+                gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+                warmup_steps=100,
+                num_train_epochs=EPOCHS,
+                learning_rate=LEARNING_RATE,
+                fp16=True,
+                logging_steps=10,
+                output_dir=output_path,
+                save_total_limit=3,
+            ),
+            data_collator=transformers.DataCollatorForLanguageModeling(
+                tokenizer, mlm=False
+            ),
+        )
+        model.config.use_cache = False
+        trainer.train(resume_from_checkpoint=False)
+
+        model.save_pretrained(output_path)
 
     def generate_streaming(self, generation_config: GenerationArgs, prompt: str):
         generation_config = GenerationConfig(
@@ -131,3 +184,30 @@ class LlamaLLM:
         with utils.Iteratorize(gen, None, None) as generator:
             for output in generator:
                 yield output
+
+
+class LlamaLLM(LLM):
+    model_type: Literal["Llama"] = "Llama"
+    client: Optional[HuggingfaceClient]
+    model: Optional[LlamaForCausalLM]
+    tokenizer: Optional[LlamaTokenizer]
+
+    def load_model(self, repo_id: str, model_path: str):
+        replace_peft_model_with_int4_lora_model()
+
+        if not self.client:
+            raise Exception("Client not set")
+
+        filepath = try_to_load_from_cache(repo_id, filename=model_path)
+        if filepath is _CACHED_NO_EXIST:
+            # handle this case
+            raise Exception("Model path does not exist")
+
+        if not filepath:
+            # raise Exception('Model path does not exist')
+            self.client.download_model(repo_id)
+            filepath = try_to_load_from_cache(repo_id, filename=model_path)
+
+        self.model, self.tokenizer = load_llama_model_4bit_low_ram(
+            repo_id, filepath, half=True
+        )
