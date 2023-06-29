@@ -1,44 +1,46 @@
 import os
+import shutil
 from typing import Optional
 
 import modal
 from modal.cls import ClsMixin
 
-from .common import cache_volume, stub
+from .common import cache_volume, models_volume, stub
 from .download import download_model
 
 
 @stub.cls(
-    **{
-        "cloud": "gcp",
-        "gpu": "A100",
-        "image": stub.inference_image,
-        "secret": modal.Secret.from_name("hf-secret"),
-        "shared_volumes": {"/root/.cache/huggingface/hub": cache_volume},
-        "concurrency_limit": 1,
-        "container_idle_timeout": 300,
-    }
+    cloud="gcp",
+    gpu="A100",
+    image=stub.inference_image,
+    secret=modal.Secret.from_name("hf-secret"),
+    shared_volumes={
+        "/root/.cache/huggingface/hub": cache_volume,
+        "/models": models_volume,
+    },
+    concurrency_limit=1,
+    container_idle_timeout=300,
 )
 class Inference(ClsMixin):
     def __init__(
         self,
         repo_id: str,
-        model_path: str,
         lora: Optional[str] = None,
     ):
         self.repo_id = repo_id
-        self.model_path = model_path
 
     def __enter__(self):
-        from gpt.huggingface import HuggingfaceClient
         from gpt.llm import LlamaLLM
 
+        # download model
+        model_path = f"/models/{self.repo_id.replace('/', '--')}"
+        if not os.path.exists(model_path):
+            download_model(
+                self.repo_id, local_dir=model_path, local_dir_use_symlinks=False
+            )
+
         self.llm = LlamaLLM()
-        client = HuggingfaceClient(
-            os.environ["HUGGINGFACE_TOKEN"], download_model_fn=download_model.call
-        )
-        self.llm.set_client(client)
-        self.llm.load_model(self.repo_id, self.model_path)
+        self.llm.load_model(model_path)
 
     @modal.method(is_generator=True)
     def predict(self, prompt, generation_args={}, lora=None):

@@ -1,7 +1,8 @@
 fastapi
 huggingface_hub
 
-accelerate
+accelerate==0.20.3
+einops==0.6.1
 numpy
 requests
 rwkv
@@ -11,6 +12,7 @@ tqdm
 torch
 datasets
 triton
-peft @ git+https://github.com/huggingface/peft.git@70af02a2bca5a63921790036b2c9430edf4037e2#egg=peft
-transformers @ git+https://github.com/huggingface/transformers.git@de9255de27abfcae4a1f816b904915f0b1e23cd9#egg=transformers
-alpaca_lora_4bit @ git+https://github.com/nealchandra/alpaca_lora_4bit@a248f9f90137455753618164046cd010e6939908#egg=alpaca_lora_4bit
+bitsandbytes
+scipy
+peft @ git+https://github.com/huggingface/peft.git@86290e9660d24ef0d0cedcf57710da249dd1f2f4#egg=peft
+transformers @ git+https://github.com/huggingface/transformers.git@66954ea25e342fd451c26ec1c295da0b8692086b#egg=transformers

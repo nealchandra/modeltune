@@ -4,18 +4,22 @@ import * as React from 'react';
 
 import { GenerationParamInput } from '@app/components/generation-param-input';
 import { GenerationParamSlider } from '@app/components/generation-param-slider';
+import { GenerationParamModelSelect } from '@app/components/generation-params-model-select';
 import { Icons } from '@app/components/icons';
 import { Alert, AlertDescription, AlertTitle } from '@app/components/ui/alert';
 import { Button } from '@app/components/ui/button';
 import { ContentEditableDiv } from '@app/components/ui/content-editable-div';
 
-import { GenerationParams, useModelPlayground } from './useModelPlayground';
+import {
+  BASE_MODELS,
+  GenerationParams,
+  useModelPlayground,
+} from './useModelPlayground';
 
 export const Editor = () => {
   const [generationParams, setGenerationParams] =
     React.useState<GenerationParams>({
-      repoId: 'TheBloke/vicuna-13B-1.1-GPTQ-4bit-128g',
-      modelPath: 'vicuna-13B-1.1-GPTQ-4bit-128g.latest.safetensors',
+      repoId: 'tiiuae/falcon-7b-instruct',
       temperature: 0.7,
       topP: 0.7,
       maxTokens: 256,
@@ -50,6 +54,18 @@ export const Editor = () => {
           className="editor my-2 min-h-[400px] flex-1 p-4 md:min-h-[700px] lg:min-h-[700px]"
         />
         <div>
+          <GenerationParamModelSelect
+            title="Base Model"
+            hoverText="The model to use for generation."
+            choices={BASE_MODELS}
+            model={generationParams.repoId}
+            onValueChange={(value) => {
+              setGenerationParams({
+                ...generationParams,
+                repoId: value,
+              });
+            }}
+          />
           <GenerationParamSlider
             title="Temperature"
             hoverText="Controls the randomness of the generated text. Lower values make the model more predictable."

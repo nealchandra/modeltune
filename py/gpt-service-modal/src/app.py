@@ -20,23 +20,6 @@ class Message(TypedDict):
     content: str
 
 
-# @modal.asgi_app()
-# def web():
-#     web_app = FastAPI()
-#     m = Inference.remote(param1, param2)
-
-#     @web_app.get("/stats")
-#     async def static(request: StatsRequest = Depends()):
-#         return m.my_method.get_current_stats()
-
-#     @web_app.post("/generate")
-#     async def generate(body: Request):
-#         return StreamingResponse(
-#             m.my_method(body.content),
-#             media_type="text/event-stream",
-#         )
-
-
 @stub.function(
     image=stub.download_image,
     container_idle_timeout=300,
@@ -67,43 +50,23 @@ def web():
 
     class ChatCompletionRequest(BaseModel):
         repo_id: str
-        model_path: str
         lora: Optional[str]
         content: str
 
         generation_args: dict
 
-    @web_app.get("/stats")
-    async def static(request: StatsRequest = Depends()):
-        # stats = Inference.remote(
-        #     request.repo_id, request.model_path
-        # ).predict.get_current_stats()
-
-        stats = Inference.remote(
-            "TheBloke/vicuna-13B-1.1-GPTQ-4bit-128g",
-            "vicuna-13B-1.1-GPTQ-4bit-128g.compat.no-act-order.pt",
-        ).predict.get_current_stats()
-        return stats
-
     @web_app.post("/generate")
     async def generate(body: ChatCompletionRequest, request: Request):
         content = body.content
 
-        predict = Inference.remote(
-            "TheBloke/vicuna-13B-1.1-GPTQ-4bit-128g",
-            "vicuna-13B-1.1-GPTQ-4bit-128g.compat.no-act-order.pt",
-        ).predict
+        predict = Inference.remote(body.repo_id).predict
 
         return StreamingResponse(
-            predict(
+            predict.call(
                 content,
                 body.generation_args,
                 body.lora,
             ),
-            headers={
-                "Modal-Call-ID": predict.object_id,
-                "Access-Control-Expose-Headers": "Modal-Call-ID",
-            },
             media_type="text/event-stream",
         )
 

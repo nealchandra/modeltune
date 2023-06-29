@@ -1,13 +1,10 @@
 import os
 import time
+from threading import Thread
 from typing import Literal, Optional, TypedDict, Union
 
-import alpaca_lora_4bit.autograd_4bit
 import torch
-from alpaca_lora_4bit.autograd_4bit import load_llama_model_4bit_low_ram
-from alpaca_lora_4bit.monkeypatch.peft_tuners_lora_monkey_patch import (
-    replace_peft_model_with_int4_lora_model,
-)
+import transformers
 from huggingface_hub import (
     _CACHED_NO_EXIST,
     login,
@@ -17,18 +14,17 @@ from huggingface_hub import (
 from huggingface_hub.constants import HUGGINGFACE_HUB_CACHE
 from peft import LoraConfig, PeftModel, get_peft_model, prepare_model_for_int8_training
 from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    BitsAndBytesConfig,
     GenerationConfig,
     LlamaForCausalLM,
     LlamaTokenizer,
     PreTrainedModel,
     PreTrainedTokenizer,
     StoppingCriteria,
+    TextIteratorStreamer,
 )
-
-from .huggingface import HuggingfaceClient
-
-alpaca_lora_4bit.autograd_4bit.use_new = True
-alpaca_lora_4bit.autograd_4bit.auto_switch = True
 
 from . import utils
 
@@ -58,25 +54,30 @@ class GenerationArgs(TypedDict):
 
 class LLM:
     model_type: Union[Literal["Llama"], Literal["Falcon"]]
-    client: Optional[HuggingfaceClient]
     model: Optional[PreTrainedModel]
     tokenizer: Optional[PreTrainedTokenizer]
 
-    def set_client(self, client: HuggingfaceClient):
-        self.client = client
+    def load_model(self, model_path: str):
+        nf4_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=False,
+            bnb_4bit_compute_dtype=torch.bfloat16,
+        )
+
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            quantization_config=nf4_config,
+            trust_remote_code=True,
+            device_map="auto",
+        )
+        self.model.eval()
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
 
     def apply_lora(self, lora: str):
         if not self.model:
             raise Exception("Model not loaded")
 
-        if not self.client:
-            raise Exception("Client not set")
-
-        filepath = try_to_load_from_cache(lora, filename="adapter_config.json")
-        if not filepath:
-            self.client.download_model(lora)
-
-        login(self.client.token)
         self.model = PeftModel.from_pretrained(
             self.model,
             lora,
@@ -93,61 +94,61 @@ class LLM:
 
         self.model = PeftModel.get_base_model(self.model)
 
-    def train(self, train_args):
-        self.model = prepare_model_for_int8_training(self.model)
+    # def train(self, train_args):
+    #     self.model = prepare_model_for_int8_training(self.model)
 
-        config = LoraConfig(
-            r=LORA_R,
-            lora_alpha=LORA_ALPHA,
-            target_modules=["q_proj", "v_proj"],
-            lora_dropout=LORA_DROPOUT,
-            bias="none",
-            task_type=TaskType.CAUSAL_LM,
-        )
-        model = get_peft_model(model, config)
-        self.tokenizer.pad_token_id = (
-            0  # unk. we want this to be different from the eos token
-        )
-        data = load_dataset(dataset_repo_id)
+    #     config = LoraConfig(
+    #         r=LORA_R,
+    #         lora_alpha=LORA_ALPHA,
+    #         target_modules=["q_proj", "v_proj"],
+    #         lora_dropout=LORA_DROPOUT,
+    #         bias="none",
+    #         task_type=TaskType.CAUSAL_LM,
+    #     )
+    #     model = get_peft_model(model, config)
+    #     self.tokenizer.pad_token_id = (
+    #         0  # unk. we want this to be different from the eos token
+    #     )
+    #     data = load_dataset(dataset_repo_id)
 
-        from src.prompts.alpaca import prompt
+    #     from src.prompts.alpaca import prompt
 
-        def tokenize(data):
-            result = tokenizer(
-                prompt.generate_prompt(data),
-                truncation=True,
-                max_length=CUTOFF_LEN + 1,
-                padding="max_length",
-            )
-            return {
-                "input_ids": result["input_ids"][:-1],
-                "attention_mask": result["attention_mask"][:-1],
-            }
+    #     def tokenize(data):
+    #         result = tokenizer(
+    #             prompt.generate_prompt(data),
+    #             truncation=True,
+    #             max_length=CUTOFF_LEN + 1,
+    #             padding="max_length",
+    #         )
+    #         return {
+    #             "input_ids": result["input_ids"][:-1],
+    #             "attention_mask": result["attention_mask"][:-1],
+    #         }
 
-        data = data.shuffle().map(lambda x: tokenize(x))
+    #     data = data.shuffle().map(lambda x: tokenize(x))
 
-        trainer = transformers.Trainer(
-            model=model,
-            train_dataset=data["train"],
-            args=transformers.TrainingArguments(
-                per_device_train_batch_size=MICRO_BATCH_SIZE,
-                gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-                warmup_steps=100,
-                num_train_epochs=EPOCHS,
-                learning_rate=LEARNING_RATE,
-                fp16=True,
-                logging_steps=10,
-                output_dir=output_path,
-                save_total_limit=3,
-            ),
-            data_collator=transformers.DataCollatorForLanguageModeling(
-                tokenizer, mlm=False
-            ),
-        )
-        model.config.use_cache = False
-        trainer.train(resume_from_checkpoint=False)
+    #     trainer = transformers.Trainer(
+    #         model=model,
+    #         train_dataset=data["train"],
+    #         args=transformers.TrainingArguments(
+    #             per_device_train_batch_size=MICRO_BATCH_SIZE,
+    #             gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+    #             warmup_steps=100,
+    #             num_train_epochs=EPOCHS,
+    #             learning_rate=LEARNING_RATE,
+    #             fp16=True,
+    #             logging_steps=10,
+    #             output_dir=output_path,
+    #             save_total_limit=3,
+    #         ),
+    #         data_collator=transformers.DataCollatorForLanguageModeling(
+    #             tokenizer, mlm=False
+    #         ),
+    #     )
+    #     model.config.use_cache = False
+    #     trainer.train(resume_from_checkpoint=False)
 
-        model.save_pretrained(output_path)
+    #     model.save_pretrained(output_path)
 
     def generate_streaming(self, generation_config: GenerationArgs, prompt: str):
         generation_config = GenerationConfig(
@@ -155,59 +156,39 @@ class LLM:
                 "temperature": 0.7,
                 "top_p": 0.70,
                 "repetition_penalty": 1 / 0.85,
+                "stopping_sequence": "### Human:",
+                "max_new_tokens": 512,
+                "do_sample": True,
                 **generation_config,
             }
         )
 
-        # Tokenize prompt and generate against the model
-        batch = self.tokenizer(prompt, return_tensors="pt")
+        tokenized = self.tokenizer(prompt, return_tensors="pt")
+        input_ids = tokenized.input_ids
+        input_ids = input_ids.to(self.model.device)
 
-        start_ts = time.time()
+        streamer = TextIteratorStreamer(self.tokenizer, skip_special_tokens=True)
+        generate_kwargs = dict(
+            input_ids=input_ids,
+            generation_config=generation_config,
+            return_dict_in_generate=True,
+            eos_token_id=self.tokenizer.eos_token_id,
+            pad_token_id=self.tokenizer.eos_token_id,
+            bos_token_id=self.tokenizer.bos_token_id,
+            attention_mask=tokenized.attention_mask,
+            output_scores=True,
+            streamer=streamer,
+        )
 
-        def gen(callback):
-            # Generate response from model using stopping criteria to stream the output
-            with torch.no_grad():
-                out = self.model.generate(
-                    generation_config=generation_config,
-                    input_ids=batch["input_ids"].cuda(),
-                    attention_mask=torch.ones_like(batch["input_ids"]).cuda(),
-                    max_new_tokens=200,
-                    stopping_criteria=[
-                        utils.StreamAndStop(
-                            self.tokenizer,
-                            callback,
-                            stop=generation_config.stopping_sequence or "### Human:",
-                        )
-                    ],
-                )
+        thread = Thread(target=self.model.generate, kwargs=generate_kwargs)
+        thread.start()
+        for new_text in streamer:
+            yield new_text
 
-        with utils.Iteratorize(gen, None, None) as generator:
-            for output in generator:
-                yield output
+        thread.join()
 
 
 class LlamaLLM(LLM):
     model_type: Literal["Llama"] = "Llama"
-    client: Optional[HuggingfaceClient]
     model: Optional[LlamaForCausalLM]
     tokenizer: Optional[LlamaTokenizer]
-
-    def load_model(self, repo_id: str, model_path: str):
-        replace_peft_model_with_int4_lora_model()
-
-        if not self.client:
-            raise Exception("Client not set")
-
-        filepath = try_to_load_from_cache(repo_id, filename=model_path)
-        if filepath is _CACHED_NO_EXIST:
-            # handle this case
-            raise Exception("Model path does not exist")
-
-        if not filepath:
-            # raise Exception('Model path does not exist')
-            self.client.download_model(repo_id)
-            filepath = try_to_load_from_cache(repo_id, filename=model_path)
-
-        self.model, self.tokenizer = load_llama_model_4bit_low_ram(
-            repo_id, filepath, half=True
-        )

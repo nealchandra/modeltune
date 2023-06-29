@@ -14,8 +14,7 @@ type EditorProps = {
 };
 
 export type GenerationParams = {
-  repoId: string;
-  modelPath: string;
+  repoId: keyof typeof BASE_MODELS;
   lora?: string;
 
   temperature: number;
@@ -25,9 +24,22 @@ export type GenerationParams = {
   stoppingSequence: string;
 };
 
+export const BASE_MODELS = {
+  'tiiuae/falcon-7b-instruct': 'Falcon 7B Instruct',
+  'TheBloke/Wizard-Vicuna-13B-Uncensored-HF': 'Vicuna 13B',
+};
+
+const BASE_TEMPLATES = {
+  'tiiuae/falcon-7b-instruct': `You are a helpful AI assistant
+Human: What is a llama?
+Assistant:`,
+  'TheBloke/Wizard-Vicuna-13B-Uncensored-HF': `You are a helpful AI assistant ###
+### Human: What is a llama?
+### Assistant:`,
+};
+
 export const useModelPlayground = ({
   repoId,
-  modelPath,
   lora,
   temperature,
   maxTokens,
@@ -89,8 +101,8 @@ export const useModelPlayground = ({
 
   // reset on model change
   React.useEffect(() => {
-    setHtml(TEMPLATE_TEXT);
-  }, [repoId, modelPath, lora]);
+    setHtml(BASE_TEMPLATES[repoId]);
+  }, [repoId, lora]);
 
   // clear marked text regex and set html
   const onChange = React.useCallback((html: string) => {
@@ -107,7 +119,6 @@ export const useModelPlayground = ({
       method: 'POST',
       body: JSON.stringify({
         repo_id: repoId,
-        model_path: modelPath,
         // lora: 'nealchandra/vicuna-13b-lora-lt-full',
         content: prompt,
         generation_args: {
@@ -121,7 +132,7 @@ export const useModelPlayground = ({
     };
 
     submit(options, prompt);
-  }, [repoId, modelPath, lora, html]);
+  }, [repoId, lora, html]);
 
   const onCancel = React.useCallback(async () => {
     controller.abort();
