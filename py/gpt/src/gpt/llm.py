@@ -22,7 +22,6 @@ from transformers import (
     LlamaTokenizer,
     PreTrainedModel,
     PreTrainedTokenizer,
-    StoppingCriteria,
     TextIteratorStreamer,
 )
 
@@ -72,7 +71,9 @@ class LLM:
             device_map="auto",
         )
         self.model.eval()
+
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        self.model = torch.compile(self.model)
 
     def apply_lora(self, lora: str):
         if not self.model:
@@ -150,18 +151,19 @@ class LLM:
 
     #     model.save_pretrained(output_path)
 
-    def generate_streaming(self, generation_config: GenerationArgs, prompt: str):
+    def generate_streaming(self, generation_args: GenerationArgs, prompt: str):
         generation_config = GenerationConfig(
             **{
                 "temperature": 0.7,
                 "top_p": 0.70,
                 "repetition_penalty": 1 / 0.85,
-                "stopping_sequence": "### Human:",
                 "max_new_tokens": 512,
                 "do_sample": True,
-                **generation_config,
+                **generation_args,
             }
         )
+
+        print(generation_args)
 
         tokenized = self.tokenizer(prompt, return_tensors="pt")
         input_ids = tokenized.input_ids
@@ -178,6 +180,9 @@ class LLM:
             attention_mask=tokenized.attention_mask,
             output_scores=True,
             streamer=streamer,
+            stopping_criteria=[
+                utils.Stop(self.tokenizer, generation_args["stopping_sequence"])
+            ],
         )
 
         thread = Thread(target=self.model.generate, kwargs=generate_kwargs)

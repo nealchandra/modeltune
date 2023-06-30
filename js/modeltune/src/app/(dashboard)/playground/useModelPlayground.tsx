@@ -31,7 +31,7 @@ export const BASE_MODELS = {
 
 const BASE_TEMPLATES = {
   'tiiuae/falcon-7b-instruct': `You are a helpful AI assistant
-Human: What is a llama?
+User: What is a llama?
 Assistant:`,
   'TheBloke/Wizard-Vicuna-13B-Uncensored-HF': `You are a helpful AI assistant ###
 ### Human: What is a llama?
@@ -84,7 +84,6 @@ export const useModelPlayground = ({
         // setFnId(fnId);
 
         const prediction = decoder.decode(value);
-
         if (initial) {
           const [_, newTokens] = prediction.split(initial);
           setHtml(`${initial}<mark>${newTokens}</mark>`);
@@ -112,15 +111,16 @@ export const useModelPlayground = ({
   const onSubmit = React.useCallback(() => {
     const sanitized = sanitizeHtml(html, {
       allowedTags: [],
+      selfClosing: ['br'],
     });
-    const prompt = `${html}`.replace('<mark>', '').replace('</mark>', '');
+    setHtml(sanitized);
 
     const options = {
       method: 'POST',
       body: JSON.stringify({
         repo_id: repoId,
         // lora: 'nealchandra/vicuna-13b-lora-lt-full',
-        content: prompt,
+        content: sanitized,
         generation_args: {
           temperature,
           max_tokens: maxTokens,
@@ -131,8 +131,8 @@ export const useModelPlayground = ({
       headers: { 'Content-Type': 'application/json' },
     };
 
-    submit(options, prompt);
-  }, [repoId, lora, html]);
+    submit(options, sanitized);
+  }, [repoId, lora, html, temperature, maxTokens, topP, stoppingSequence]);
 
   const onCancel = React.useCallback(async () => {
     controller.abort();

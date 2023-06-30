@@ -59,14 +59,21 @@ def web():
     async def generate(body: ChatCompletionRequest, request: Request):
         content = body.content
 
-        predict = Inference.remote(body.repo_id).predict
+        remote = Inference.remote(body.repo_id)
+
+        def generate_cummulative():
+            full = ""
+            for text in remote.predict.call(
+                content,
+                generation_args=body.generation_args,
+                lora=body.lora,
+            ):
+                full += text
+                print(text, end="", flush=True)
+                yield full
 
         return StreamingResponse(
-            predict.call(
-                content,
-                body.generation_args,
-                body.lora,
-            ),
+            generate_cummulative(),
             media_type="text/event-stream",
         )
 
