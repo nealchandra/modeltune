@@ -5,7 +5,7 @@ from typing import Optional
 import modal
 from modal.cls import ClsMixin
 
-from .common import cache_volume, models_volume, stub
+from .common import models_volume, stub
 from .download import download_model
 
 
@@ -15,7 +15,6 @@ from .download import download_model
     image=stub.inference_image,
     secret=modal.Secret.from_name("hf-secret"),
     shared_volumes={
-        "/root/.cache/huggingface/hub": cache_volume,
         "/models": models_volume,
     },
     concurrency_limit=1,

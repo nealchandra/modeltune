@@ -27,6 +27,7 @@ export type GenerationParams = {
 export const BASE_MODELS = {
   'tiiuae/falcon-7b-instruct': 'Falcon 7B Instruct',
   'TheBloke/Wizard-Vicuna-13B-Uncensored-HF': 'Vicuna 13B',
+  'mosaicml/mpt-30b-chat': 'MPT 30B Chat',
 };
 
 const BASE_TEMPLATES = {
@@ -36,6 +37,9 @@ Assistant:`,
   'TheBloke/Wizard-Vicuna-13B-Uncensored-HF': `You are a helpful AI assistant ###
 ### Human: What is a llama?
 ### Assistant:`,
+  'mosaicml/mpt-30b-chat': `You are a helpful AI assistant
+User: What is a llama?
+Assistant:`,
 };
 
 export const useModelPlayground = ({

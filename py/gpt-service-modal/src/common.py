@@ -1,7 +1,7 @@
 import modal
 
 stub = modal.Stub(name="gpt-service")
-cache_volume = modal.SharedVolume().persist("model-cache")
+# cache_volume = modal.SharedVolume().persist("model-cache")
 models_volume = modal.SharedVolume().persist("models-dir")
 
 stub.inference_image = (

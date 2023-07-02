@@ -14,6 +14,7 @@ from huggingface_hub import (
 from huggingface_hub.constants import HUGGINGFACE_HUB_CACHE
 from peft import LoraConfig, PeftModel, get_peft_model, prepare_model_for_int8_training
 from transformers import (
+    AutoConfig,
     AutoModelForCausalLM,
     AutoTokenizer,
     BitsAndBytesConfig,
@@ -64,8 +65,16 @@ class LLM:
             bnb_4bit_compute_dtype=torch.bfloat16,
         )
 
+        config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
+        # if "mpt" in model_path:
+        #     config.attn_config[
+        #         "attn_impl"
+        #     ] = "triton"  # change this to use triton-based FlashAttention
+        #     config.init_device = "cuda:0"  # For fast initialization directly on GPU!
+
         self.model = AutoModelForCausalLM.from_pretrained(
             model_path,
+            config=config,
             quantization_config=nf4_config,
             trust_remote_code=True,
             device_map="auto",
