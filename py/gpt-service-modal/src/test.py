@@ -11,8 +11,6 @@ prompt_template = (
 
 @stub.local_entrypoint()
 def llm_test():
-    remote = Inference.remote("TheBloke/Wizard-Vicuna-13B-Uncensored-HF")
+    remote = Inference.remote("tiiuae/falcon-7b-instruct")
 
-    question = "What are the main differences between Python and JavaScript programming languages?"
-    for text in remote.predict.call(prompt_template.format(question)):
-        print(text, end="", flush=True)
+    remote.train.call()

@@ -5,6 +5,7 @@ from typing import Literal, Optional, TypedDict, Union
 
 import torch
 import transformers
+from datasets import load_dataset
 from huggingface_hub import (
     _CACHED_NO_EXIST,
     login,
@@ -12,12 +13,20 @@ from huggingface_hub import (
     try_to_load_from_cache,
 )
 from huggingface_hub.constants import HUGGINGFACE_HUB_CACHE
-from peft import LoraConfig, PeftModel, get_peft_model, prepare_model_for_int8_training
+from peft import (
+    LoraConfig,
+    PeftModel,
+    TaskType,
+    get_peft_model,
+    prepare_model_for_kbit_training,
+)
+from peft import utils as peft_utils
 from transformers import (
     AutoConfig,
     AutoModelForCausalLM,
     AutoTokenizer,
     BitsAndBytesConfig,
+    DataCollatorForLanguageModeling,
     GenerationConfig,
     LlamaForCausalLM,
     LlamaTokenizer,
@@ -79,10 +88,8 @@ class LLM:
             trust_remote_code=True,
             device_map="auto",
         )
-        self.model.eval()
-
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        self.model = torch.compile(self.model)
+        # self.model = torch.compile(self.model)
 
     def apply_lora(self, lora: str):
         if not self.model:
@@ -104,63 +111,64 @@ class LLM:
 
         self.model = PeftModel.get_base_model(self.model)
 
-    # def train(self, train_args):
-    #     self.model = prepare_model_for_int8_training(self.model)
+    def train(self, dataset_path, output_dir, train_args={}):
+        self.model.train()
 
-    #     config = LoraConfig(
-    #         r=LORA_R,
-    #         lora_alpha=LORA_ALPHA,
-    #         target_modules=["q_proj", "v_proj"],
-    #         lora_dropout=LORA_DROPOUT,
-    #         bias="none",
-    #         task_type=TaskType.CAUSAL_LM,
-    #     )
-    #     model = get_peft_model(model, config)
-    #     self.tokenizer.pad_token_id = (
-    #         0  # unk. we want this to be different from the eos token
-    #     )
-    #     data = load_dataset(dataset_repo_id)
+        self.model = prepare_model_for_kbit_training(self.model)
+        self.model.config.use_cache = False
 
-    #     from src.prompts.alpaca import prompt
+        print(os.listdir(output_dir))
 
-    #     def tokenize(data):
-    #         result = tokenizer(
-    #             prompt.generate_prompt(data),
-    #             truncation=True,
-    #             max_length=CUTOFF_LEN + 1,
-    #             padding="max_length",
-    #         )
-    #         return {
-    #             "input_ids": result["input_ids"][:-1],
-    #             "attention_mask": result["attention_mask"][:-1],
-    #         }
+        print(self.model.base_model_prefix)
+        if False:
+            target_modules = ["q_proj", "v_proj"]
+        else:
+            target_modules = ["query_key_value"]
 
-    #     data = data.shuffle().map(lambda x: tokenize(x))
+        config = LoraConfig(
+            r=LORA_R,
+            lora_alpha=LORA_ALPHA,
+            target_modules=target_modules,
+            lora_dropout=LORA_DROPOUT,
+            bias="none",
+            task_type=TaskType.CAUSAL_LM,
+        )
+        model = get_peft_model(self.model, config)
 
-    #     trainer = transformers.Trainer(
-    #         model=model,
-    #         train_dataset=data["train"],
-    #         args=transformers.TrainingArguments(
-    #             per_device_train_batch_size=MICRO_BATCH_SIZE,
-    #             gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-    #             warmup_steps=100,
-    #             num_train_epochs=EPOCHS,
-    #             learning_rate=LEARNING_RATE,
-    #             fp16=True,
-    #             logging_steps=10,
-    #             output_dir=output_path,
-    #             save_total_limit=3,
-    #         ),
-    #         data_collator=transformers.DataCollatorForLanguageModeling(
-    #             tokenizer, mlm=False
-    #         ),
-    #     )
-    #     model.config.use_cache = False
-    #     trainer.train(resume_from_checkpoint=False)
+        data = load_dataset(dataset_path)
+        print(data.shape)
+        data = (
+            data["train"]
+            .select(range(10))
+            .map(lambda samples: self.tokenizer(samples["quote"]))
+        )
 
-    #     model.save_pretrained(output_path)
+        self.tokenizer.pad_token = self.tokenizer.eos_token
+
+        trainer = transformers.Trainer(
+            model=model,
+            train_dataset=data,
+            args=transformers.TrainingArguments(
+                per_device_train_batch_size=MICRO_BATCH_SIZE,
+                gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+                num_train_epochs=EPOCHS,
+                learning_rate=LEARNING_RATE,
+                fp16=True,
+                warmup_steps=2,
+                max_steps=20,
+                logging_steps=1,
+                output_dir=output_dir,
+                save_total_limit=2,
+                # optim="paged_adamw_8bit",
+            ),
+            data_collator=DataCollatorForLanguageModeling(self.tokenizer, mlm=False),
+        )
+        trainer.train()
+        model.save_pretrained(output_dir)
 
     def generate_streaming(self, generation_args: GenerationArgs, prompt: str):
+        self.model.eval()
+
         generation_config = GenerationConfig(
             **{
                 "temperature": 0.7,

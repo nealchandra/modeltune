@@ -41,6 +41,21 @@ class Inference(ClsMixin):
         self.llm = LlamaLLM()
         self.llm.load_model(model_path)
 
+    @modal.method()
+    def train(self):
+        dataset_path = f"/models/datasets/{'Abirate/english_quotes'.replace('/', '--')}"
+        if not os.path.exists(dataset_path):
+            download_model(
+                "Abirate/english_quotes",
+                repo_type="dataset",
+                local_dir=dataset_path,
+                local_dir_use_symlinks=False,
+            )
+
+        self.llm.train(dataset_path, "/models/finetunes")
+
+        print(os.listdir("/models/finetunes"))
+
     @modal.method(is_generator=True)
     def predict(self, prompt, generation_args={}, lora=None):
         from gpt.llm import GenerationArgs
