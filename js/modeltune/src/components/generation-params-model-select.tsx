@@ -1,6 +1,10 @@
 import * as React from 'react';
 
 import {
+  BASE_MODELS,
+  BASE_MODEL_NAMES,
+} from '@app/app/(dashboard)/useModelPlayground';
+import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
@@ -14,23 +18,19 @@ import {
   SelectValue,
 } from '@app/components/ui/select';
 
-type ModelDefinition = Record<string, string>;
-
-interface GenerationParamModelSelectProps<T extends ModelDefinition> {
+interface GenerationParamModelSelectProps {
   title: string;
   hoverText: string;
-  choices: T;
-  model: string;
-  onValueChange?: (value: keyof T) => void;
+  model: BASE_MODELS;
+  onValueChange?: (value: BASE_MODELS) => void;
 }
 
-export function GenerationParamModelSelect<T extends ModelDefinition>({
+export function GenerationParamModelSelect({
   title,
   hoverText,
-  choices,
   model,
   onValueChange,
-}: GenerationParamModelSelectProps<T>) {
+}: GenerationParamModelSelectProps) {
   return (
     <div className="grid gap-2 pt-2">
       <HoverCard openDelay={200}>
@@ -41,14 +41,19 @@ export function GenerationParamModelSelect<T extends ModelDefinition>({
                 {title}
               </Label>
             </div>
-            <Select onValueChange={onValueChange} value={model}>
+            <Select
+              onValueChange={(val: BASE_MODELS) => onValueChange?.(val)}
+              value={model}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select base model" />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(choices).map(([key, value]) => (
-                  <SelectItem key={key} value={key}>
-                    {value}
+                {(
+                  Object.keys(BASE_MODELS) as Array<keyof typeof BASE_MODELS>
+                ).map((key) => (
+                  <SelectItem key={key} value={BASE_MODELS[key]}>
+                    {BASE_MODEL_NAMES[BASE_MODELS[key]]}
                   </SelectItem>
                 ))}
               </SelectContent>

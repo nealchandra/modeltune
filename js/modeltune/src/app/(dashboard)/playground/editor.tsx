@@ -2,6 +2,11 @@
 
 import * as React from 'react';
 
+import {
+  BASE_MODELS,
+  GenerationParams,
+  useModelPlayground,
+} from '../useModelPlayground';
 import { GenerationParamInput } from '@app/components/generation-param-input';
 import { GenerationParamSlider } from '@app/components/generation-param-slider';
 import { GenerationParamModelSelect } from '@app/components/generation-params-model-select';
@@ -10,16 +15,10 @@ import { Alert, AlertDescription, AlertTitle } from '@app/components/ui/alert';
 import { Button } from '@app/components/ui/button';
 import { ContentEditableDiv } from '@app/components/ui/content-editable-div';
 
-import {
-  BASE_MODELS,
-  GenerationParams,
-  useModelPlayground,
-} from './useModelPlayground';
-
 export const Editor = () => {
   const [generationParams, setGenerationParams] =
     React.useState<GenerationParams>({
-      repoId: 'tiiuae/falcon-7b-instruct',
+      repoId: BASE_MODELS.FALCON,
       temperature: 0.7,
       topP: 0.7,
       maxTokens: 256,
@@ -57,7 +56,6 @@ export const Editor = () => {
           <GenerationParamModelSelect
             title="Base Model"
             hoverText="The model to use for generation."
-            choices={BASE_MODELS}
             model={generationParams.repoId}
             onValueChange={(value) => {
               setGenerationParams({

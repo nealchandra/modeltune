@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 
-import { autocompleteDatasets, getDatasetInfo } from '@app/app/actions';
+import { autocompleteDatasets, getDatasetInfo } from '../actions';
+import { BASE_MODELS, BASE_MODEL_NAMES } from '../useModelPlayground';
 import { Button } from '@app/components/ui/button';
 import {
   Command,
@@ -52,8 +53,18 @@ import { fromTheme } from 'tailwind-merge';
 import * as z from 'zod';
 import { string } from 'zod';
 
+function zodEnumFromObjKeys<K extends string>(
+  obj: Record<K, any>
+): z.ZodEnum<[K, ...K[]]> {
+  const [firstKey, ...otherKeys] = Object.keys(obj) as K[];
+  return z.enum([firstKey, ...otherKeys]);
+}
+
+const baseModelChoices = zodEnumFromObjKeys(BASE_MODELS);
+
 const formSchema = z.object({
   name: z.string(),
+  baseModel: zodEnumFromObjKeys(BASE_MODELS),
   dataset: z
     .object({
       id: z.string(),
@@ -137,6 +148,35 @@ export default function ProfileForm() {
               </FormControl>
               <FormDescription>
                 This is the name of your finetuned model
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="baseModel"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Base Model</FormLabel>
+              <Select onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select base model" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {(
+                    Object.keys(BASE_MODELS) as Array<keyof typeof BASE_MODELS>
+                  ).map((key) => (
+                    <SelectItem key={key} value={BASE_MODELS[key]}>
+                      {BASE_MODEL_NAMES[BASE_MODELS[key]]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                The base model to begin finetuning from.
               </FormDescription>
               <FormMessage />
             </FormItem>
