@@ -6482,6 +6482,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["cmdk", "virtual:94baf1363c147f745ccb031bdb77fb69b7fbca68d8941504db11281fe6a42afba84dd9cdf80953bce21e9f6f86d8307eb0dba0db875c2f2b23d0d3b953c9ab3d#npm:0.2.0"],\
             ["eslint", "npm:8.40.0"],\
             ["eslint-config-next", "virtual:94baf1363c147f745ccb031bdb77fb69b7fbca68d8941504db11281fe6a42afba84dd9cdf80953bce21e9f6f86d8307eb0dba0db875c2f2b23d0d3b953c9ab3d#npm:13.4.1"],\
+            ["lodash", "npm:4.17.21"],\
             ["lucide-react", "virtual:94baf1363c147f745ccb031bdb77fb69b7fbca68d8941504db11281fe6a42afba84dd9cdf80953bce21e9f6f86d8307eb0dba0db875c2f2b23d0d3b953c9ab3d#npm:0.256.0"],\
             ["next", "virtual:94baf1363c147f745ccb031bdb77fb69b7fbca68d8941504db11281fe6a42afba84dd9cdf80953bce21e9f6f86d8307eb0dba0db875c2f2b23d0d3b953c9ab3d#npm:13.4.1"],\
             ["next-themes", "virtual:94baf1363c147f745ccb031bdb77fb69b7fbca68d8941504db11281fe6a42afba84dd9cdf80953bce21e9f6f86d8307eb0dba0db875c2f2b23d0d3b953c9ab3d#npm:0.2.1"],\

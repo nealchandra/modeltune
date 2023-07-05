@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 
+import { autocompleteDatasets, getDatasetInfo } from '@app/app/actions';
 import { Button } from '@app/components/ui/button';
 import {
   Command,
@@ -26,6 +27,13 @@ import {
   PopoverTrigger,
 } from '@app/components/ui/popover';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@app/components/ui/select';
+import {
   Table,
   TableBody,
   TableCaption,
@@ -36,14 +44,22 @@ import {
 } from '@app/components/ui/table';
 import { cn } from '@app/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { debounce } from 'lodash';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
+import { fromTheme } from 'tailwind-merge';
 import * as z from 'zod';
+import { string } from 'zod';
 
 const formSchema = z.object({
   name: z.string(),
-  dataset: z.string(),
+  dataset: z
+    .object({
+      id: z.string(),
+      private: z.boolean(),
+    })
+    .nullable(),
   epochs: z
     .number()
     .min(1, {
@@ -52,21 +68,30 @@ const formSchema = z.object({
     .max(5, {
       message: 'Maximum training length is 5 epochs',
     }),
-  wandbKey: z.string().uuid(),
+  wandbKey: z.string().uuid().nullable(),
+  feature: z.string(),
 });
 
-const datasets = [{ value: 'tatsu-lab/alpaca', label: 'tatsu-lab/alpaca' }];
-
 export default function ProfileForm() {
-  const [data, setData] = React.useState<Array<Object>>();
+  // const [data, setData] = React.useState<Array<Object>>();
+  const [datasets, setDatasets] = React.useState<
+    Array<{ value: string; label: string; private: boolean }>
+  >([]);
+  const [features, setFeatures] = React.useState<Array<string>>([]);
 
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    // defaultValues: {
-    //   username: '',
-    // },
+    defaultValues: {
+      name: '',
+      epochs: 1,
+      feature: '',
+      dataset: null,
+      wandbKey: null,
+    },
   });
+  const datasetWatch = form.watch('dataset');
+  const isPrivateDataset = form.watch('dataset.private');
 
   // 2. Define a submit handler.
   function onSubmit(values: z.infer<typeof formSchema>) {
@@ -76,24 +101,27 @@ export default function ProfileForm() {
   }
 
   React.useEffect(() => {
-    async function query() {
-      const response = await fetch(
-        'https://datasets-server.huggingface.co/first-rows?dataset=tatsu-lab%2Falpaca&config=tatsu-lab--alpaca&split=train',
-        {
-          headers: {
-            Authorization: `Bearer ${'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'}`,
-          },
-          method: 'GET',
-        }
-      );
-      const result = await response.json();
-      return result;
+    const dataset = form.getValues('dataset');
+    if (!dataset) return;
+
+    if (!dataset.private) {
+      getDatasetInfo(dataset.id).then((response) => {
+        setFeatures(Object.keys(response.dataset_info.features));
+      });
     }
-    query().then((response) => {
-      console.log(response);
-      setData(response.rows);
+  }, [datasetWatch]);
+
+  const [ref, setRef] = React.useState<HTMLInputElement | null>(null);
+
+  const updateDatasets = (e: Event) =>
+    autocompleteDatasets(e.target!.value).then((resp) => {
+      setDatasets(resp);
     });
-  }, []);
+
+  const updateDatasetsDebounced = React.useCallback(
+    debounce(updateDatasets, 200),
+    []
+  );
 
   return (
     <Form {...form}>
@@ -127,22 +155,25 @@ export default function ProfileForm() {
                       variant="outline"
                       role="combobox"
                       className={cn(
-                        'w-[200px] justify-between',
+                        'w-[400px] justify-between',
                         !field.value && 'text-muted-foreground'
                       )}
                     >
                       {field.value
                         ? datasets.find(
-                            (dataset) => dataset.value === field.value
+                            (dataset) => dataset.value === field.value?.id
                           )?.label
                         : 'Select dataset'}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
-                <PopoverContent className="w-[200px] p-0">
+                <PopoverContent className="w-[400px] p-0">
                   <Command>
-                    <CommandInput placeholder="Enter dataset name..." />
+                    <CommandInput
+                      placeholder="Enter dataset name..."
+                      onInputCapture={updateDatasetsDebounced}
+                    />
                     <CommandEmpty>No dataset found.</CommandEmpty>
                     <CommandGroup>
                       {datasets.map((dataset) => (
@@ -150,13 +181,17 @@ export default function ProfileForm() {
                           value={dataset.value}
                           key={dataset.value}
                           onSelect={(value) => {
-                            form.setValue('dataset', value);
+                            form.setValue('feature', '');
+                            form.setValue('dataset', {
+                              id: value,
+                              private: dataset.private,
+                            });
                           }}
                         >
                           <Check
                             className={cn(
                               'mr-2 h-4 w-4',
-                              dataset.value === field.value
+                              dataset.value === field.value?.id
                                 ? 'opacity-100'
                                 : 'opacity-0'
                             )}
@@ -175,6 +210,56 @@ export default function ProfileForm() {
             </FormItem>
           )}
         />
+        {!isPrivateDataset && features.length ? (
+          <FormField
+            control={form.control}
+            name="feature"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Dataset Key</FormLabel>
+                <Select
+                  disabled={!features.length}
+                  onValueChange={field.onChange}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select dataset feature" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {features.map((feature) => (
+                      <SelectItem key={feature} value={feature}>
+                        {feature}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  The key of the feature from the dataset to use for training
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ) : null}
+        {isPrivateDataset ? (
+          <FormField
+            control={form.control}
+            name="feature"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Dataset Key</FormLabel>
+                <FormControl>
+                  <Input type="text" placeholder="text" {...field} />
+                </FormControl>
+                <FormDescription>
+                  The key of the feature from the dataset to use for training
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ) : null}
         <FormField
           control={form.control}
           name="epochs"
@@ -196,7 +281,12 @@ export default function ProfileForm() {
             <FormItem>
               <FormLabel>wandb API Key</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="abc-123" {...field} />
+                <Input
+                  type="text"
+                  placeholder="abc-123"
+                  {...field}
+                  value={field.value ?? ''}
+                />
               </FormControl>
               <FormDescription>Weights and Biases API Key</FormDescription>
               <FormMessage />
