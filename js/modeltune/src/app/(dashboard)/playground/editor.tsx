@@ -9,6 +9,7 @@ import {
 } from '../useModelPlayground';
 import { GenerationParamInput } from '@app/components/generation-param-input';
 import { GenerationParamSlider } from '@app/components/generation-param-slider';
+import { GenerationParamFinetuneSelect } from '@app/components/generation-params-finetune-select';
 import { GenerationParamModelSelect } from '@app/components/generation-params-model-select';
 import { Icons } from '@app/components/icons';
 import { Alert, AlertDescription, AlertTitle } from '@app/components/ui/alert';
@@ -16,9 +17,11 @@ import { Button } from '@app/components/ui/button';
 import { ContentEditableDiv } from '@app/components/ui/content-editable-div';
 
 export const Editor = () => {
+  const [finetunes, setFinetunes] = React.useState<string[]>([]);
   const [generationParams, setGenerationParams] =
     React.useState<GenerationParams>({
       repoId: BASE_MODELS.FALCON,
+      lora: undefined,
       temperature: 0.7,
       topP: 0.7,
       maxTokens: 256,
@@ -26,6 +29,19 @@ export const Editor = () => {
     });
   const { html, onChange, onSubmit, onCancel } =
     useModelPlayground(generationParams);
+
+  React.useEffect(() => {
+    const updateFinetunes = async () => {
+      const resp = await fetch(
+        `https://nealcorp--gpt-service-web.modal.run/finetunes?base_model_repo_id=${generationParams.repoId}`,
+        { method: 'GET' }
+      );
+      const json = await resp.json();
+      console.log(json);
+      setFinetunes(json);
+    };
+    updateFinetunes();
+  }, [generationParams.repoId]);
 
   return (
     <div>
@@ -61,6 +77,18 @@ export const Editor = () => {
               setGenerationParams({
                 ...generationParams,
                 repoId: value,
+              });
+            }}
+          />
+          <GenerationParamFinetuneSelect
+            title="Finetune"
+            hoverText="The finetune adapter to use for generation."
+            choices={finetunes}
+            finetune={generationParams.lora}
+            onValueChange={(value) => {
+              setGenerationParams({
+                ...generationParams,
+                lora: value,
               });
             }}
           />

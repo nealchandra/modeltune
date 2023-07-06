@@ -111,15 +111,12 @@ class LLM:
 
         self.model = PeftModel.get_base_model(self.model)
 
-    def train(self, dataset_path, output_dir, train_args={}):
+    def train(self, dataset_path, dataset_feature, output_dir, train_args={}):
         self.model.train()
 
         self.model = prepare_model_for_kbit_training(self.model)
         self.model.config.use_cache = False
 
-        print(os.listdir(output_dir))
-
-        print(self.model.base_model_prefix)
         if False:
             target_modules = ["q_proj", "v_proj"]
         else:
@@ -136,11 +133,10 @@ class LLM:
         model = get_peft_model(self.model, config)
 
         data = load_dataset(dataset_path)
-        print(data.shape)
         data = (
             data["train"]
             .select(range(10))
-            .map(lambda samples: self.tokenizer(samples["quote"]))
+            .map(lambda samples: self.tokenizer(samples[dataset_feature]))
         )
 
         self.tokenizer.pad_token = self.tokenizer.eos_token
@@ -159,7 +155,6 @@ class LLM:
                 logging_steps=1,
                 output_dir=output_dir,
                 save_total_limit=2,
-                # optim="paged_adamw_8bit",
             ),
             data_collator=DataCollatorForLanguageModeling(self.tokenizer, mlm=False),
         )
@@ -179,8 +174,6 @@ class LLM:
                 **generation_args,
             }
         )
-
-        print(generation_args)
 
         tokenized = self.tokenizer(prompt, return_tensors="pt")
         input_ids = tokenized.input_ids
@@ -208,9 +201,3 @@ class LLM:
             yield new_text
 
         thread.join()
-
-
-class LlamaLLM(LLM):
-    model_type: Literal["Llama"] = "Llama"
-    model: Optional[LlamaForCausalLM]
-    tokenizer: Optional[LlamaTokenizer]

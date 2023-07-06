@@ -53,34 +53,35 @@ import { fromTheme } from 'tailwind-merge';
 import * as z from 'zod';
 import { string } from 'zod';
 
-function zodEnumFromObjKeys<K extends string>(
-  obj: Record<K, any>
+function zodEnumFromObjValues<K extends string>(
+  obj: Record<any, K>
 ): z.ZodEnum<[K, ...K[]]> {
-  const [firstKey, ...otherKeys] = Object.keys(obj) as K[];
+  const [firstKey, ...otherKeys] = Object.values(obj) as K[];
   return z.enum([firstKey, ...otherKeys]);
 }
 
-const baseModelChoices = zodEnumFromObjKeys(BASE_MODELS);
+const baseModelChoices = zodEnumFromObjValues(BASE_MODELS);
 
 const formSchema = z.object({
-  name: z.string(),
-  baseModel: zodEnumFromObjKeys(BASE_MODELS),
-  dataset: z
-    .object({
-      id: z.string(),
-      private: z.boolean(),
-    })
-    .nullable(),
-  epochs: z
-    .number()
-    .min(1, {
-      message: 'Must train for at least 1 epoch',
-    })
-    .max(5, {
-      message: 'Maximum training length is 5 epochs',
-    }),
+  name: z
+    .string()
+    .nonempty()
+    .regex(/^[a-zA-Z0-9-_]+$/),
+  baseModel: baseModelChoices,
+  dataset: z.object({
+    id: z.string(),
+    private: z.boolean(),
+  }),
+  // epochs: z
+  //   .number()
+  //   .min(1, {
+  //     message: 'Must train for at least 1 epoch',
+  //   })
+  //   .max(5, {
+  //     message: 'Maximum training length is 5 epochs',
+  //   }),
   wandbKey: z.string().uuid().nullable(),
-  feature: z.string(),
+  feature: z.string().nonempty({ message: 'Must select a feature' }),
 });
 
 export default function ProfileForm() {
@@ -90,25 +91,37 @@ export default function ProfileForm() {
   >([]);
   const [features, setFeatures] = React.useState<Array<string>>([]);
 
-  // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      epochs: 1,
+      baseModel: BASE_MODELS.FALCON,
+      // epochs: 1,
       feature: '',
-      dataset: null,
+      dataset: undefined,
       wandbKey: null,
     },
   });
   const datasetWatch = form.watch('dataset');
   const isPrivateDataset = form.watch('dataset.private');
 
-  // 2. Define a submit handler.
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log(values);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    const response = await fetch(
+      `https://nealcorp--gpt-service-web.modal.run/train`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          model_name: values.name,
+          base_model_repo_id: values.baseModel,
+          dataset_repo_id: values.dataset.id,
+          dataset_feature: values.feature,
+        }),
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+
+    const result = await response.json();
+    return result;
   }
 
   React.useEffect(() => {
@@ -300,7 +313,7 @@ export default function ProfileForm() {
             )}
           />
         ) : null}
-        <FormField
+        {/* <FormField
           control={form.control}
           name="epochs"
           render={({ field }) => (
@@ -313,7 +326,7 @@ export default function ProfileForm() {
               <FormMessage />
             </FormItem>
           )}
-        />
+        /> */}
         <FormField
           control={form.control}
           name="wandbKey"

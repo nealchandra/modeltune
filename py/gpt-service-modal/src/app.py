@@ -10,7 +10,7 @@ from typing import List, Literal, Optional, TypedDict
 
 import modal
 
-from .common import stub
+from .common import finetunes_volume, stub
 from .download import download_model
 from .inference import Inference
 
@@ -20,17 +20,32 @@ class Message(TypedDict):
     content: str
 
 
+def train_finetune(
+    base_model_repo_id, dataset_repo_id: str, dataset_feature: str, model_name: str
+):
+    remote = Inference.remote(base_model_repo_id)
+    remote.train.call(
+        dataset_repo_id,
+        dataset_feature,
+        f"{base_model_repo_id.replace('/', '--')}/{model_name}",
+    )
+
+
 @stub.function(
+    cloud="gcp",
     image=stub.download_image,
     container_idle_timeout=300,
     timeout=600,
+    shared_volumes={
+        "/finetunes": finetunes_volume,
+    },
 )
 @modal.asgi_app()
 def web():
     import asyncio
     import time
 
-    from fastapi import Depends, FastAPI, Query, Request
+    from fastapi import BackgroundTasks, Depends, FastAPI, Query, Request
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import Response, StreamingResponse
     from fastapi.staticfiles import StaticFiles
@@ -55,6 +70,12 @@ def web():
 
         generation_args: dict
 
+    class TrainRequest(BaseModel):
+        base_model_repo_id: str
+        dataset_repo_id: str
+        dataset_feature: str
+        model_name: str
+
     @web_app.post("/generate")
     async def generate(body: ChatCompletionRequest, request: Request):
         content = body.content
@@ -76,6 +97,23 @@ def web():
             generate_cummulative(),
             media_type="text/event-stream",
         )
+
+    @web_app.get("/finetunes")
+    async def list_finetunes(base_model_repo_id: str):
+        finetunes_path = f"/finetunes/{base_model_repo_id.replace('/', '--')}"
+        return os.listdir(finetunes_path) if os.path.exists(finetunes_path) else []
+
+    @web_app.post("/train")
+    async def train(body: TrainRequest, background_tasks: BackgroundTasks):
+        background_tasks.add_task(
+            train_finetune,
+            body.base_model_repo_id,
+            body.dataset_repo_id,
+            body.dataset_feature,
+            body.model_name,
+        )
+
+        return {"status": "ok"}
 
     @web_app.delete("/generation/{call_id}")
     async def cancel_generation(call_id: str):
