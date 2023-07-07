@@ -1,18 +1,16 @@
 import modal
 
-from .common import cache_volume, stub
+from .common import stub
+from .inference import Inference
 
-
-@stub.function(
-    **{
-        "cloud": "gcp",
-        "gpu": "A100",
-        "image": stub.inference_image,
-        "secret": modal.Secret.from_name("hf-secret"),
-        "shared_volumes": {"/root/.cache/huggingface/hub": cache_volume},
-        "concurrency_limit": 1,
-        "container_idle_timeout": 200,
-    }
+prompt_template = (
+    "A chat between a curious human user and an artificial intelligence assistant. The assistant give a helpful, detailed, and accurate answer to the user's question."
+    "\n\nUser:\n{}\n\nAssistant:\n"
 )
-def test():
-    print('yea')
+
+
+@stub.local_entrypoint()
+def llm_test():
+    remote = Inference.remote("tiiuae/falcon-7b-instruct")
+
+    remote.train.call()

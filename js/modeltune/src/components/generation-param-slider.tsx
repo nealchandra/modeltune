@@ -34,10 +34,15 @@ export function GenerationParamSlider({
   hoverText,
   onValueChange,
 }: GenerationParamSliderProps) {
-  const [value, setValue] = React.useState(defaultValue);
+  const [value, setValueState] = React.useState(defaultValue);
   const [inputText, setInputText] = React.useState(
     defaultValue?.[0].toString() ?? ''
   );
+
+  const setValue = (val: typeof value) => {
+    setValueState(val);
+    onValueChange?.(value);
+  };
 
   const onInputSubmit = () => {
     let val = Number(inputText);
@@ -57,10 +62,6 @@ export function GenerationParamSlider({
       setInputText(val.toString());
     }
   };
-
-  React.useEffect(() => {
-    onValueChange?.(value);
-  }, [value, onValueChange]);
 
   return (
     <div className="grid gap-2 pt-2">

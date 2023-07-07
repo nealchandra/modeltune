@@ -10,7 +10,7 @@ from typing import List, Literal, Optional, TypedDict
 
 import modal
 
-from .common import stub
+from .common import finetunes_volume, stub
 from .download import download_model
 from .inference import Inference
 
@@ -20,34 +20,37 @@ class Message(TypedDict):
     content: str
 
 
-# @modal.asgi_app()
-# def web():
-#     web_app = FastAPI()
-#     m = Inference.remote(param1, param2)
-
-#     @web_app.get("/stats")
-#     async def static(request: StatsRequest = Depends()):
-#         return m.my_method.get_current_stats()
-
-#     @web_app.post("/generate")
-#     async def generate(body: Request):
-#         return StreamingResponse(
-#             m.my_method(body.content),
-#             media_type="text/event-stream",
-#         )
+def train_finetune(
+    base_model_repo_id,
+    dataset_repo_id: str,
+    dataset_feature: str,
+    model_name: str,
+    wanb_key: Optional[str],
+):
+    remote = Inference.remote(base_model_repo_id)
+    remote.train.call(
+        dataset_repo_id,
+        dataset_feature,
+        f"{base_model_repo_id.replace('/', '--')}/{model_name}",
+        wanb_key,
+    )
 
 
 @stub.function(
+    cloud="gcp",
     image=stub.download_image,
     container_idle_timeout=300,
     timeout=600,
+    shared_volumes={
+        "/finetunes": finetunes_volume,
+    },
 )
 @modal.asgi_app()
 def web():
     import asyncio
     import time
 
-    from fastapi import Depends, FastAPI, Query, Request
+    from fastapi import BackgroundTasks, Depends, FastAPI, Query, Request
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import Response, StreamingResponse
     from fastapi.staticfiles import StaticFiles
@@ -67,45 +70,57 @@ def web():
 
     class ChatCompletionRequest(BaseModel):
         repo_id: str
-        model_path: str
         lora: Optional[str]
         content: str
 
         generation_args: dict
 
-    @web_app.get("/stats")
-    async def static(request: StatsRequest = Depends()):
-        # stats = Inference.remote(
-        #     request.repo_id, request.model_path
-        # ).predict.get_current_stats()
-
-        stats = Inference.remote(
-            "TheBloke/vicuna-13B-1.1-GPTQ-4bit-128g",
-            "vicuna-13B-1.1-GPTQ-4bit-128g.latest.safetensors",
-        ).predict.get_current_stats()
-        return stats
+    class TrainRequest(BaseModel):
+        base_model_repo_id: str
+        dataset_repo_id: str
+        dataset_feature: str
+        model_name: str
+        wandb_key: Optional[str]
 
     @web_app.post("/generate")
     async def generate(body: ChatCompletionRequest, request: Request):
         content = body.content
 
-        predict = Inference.remote(
-            "TheBloke/vicuna-13B-1.1-GPTQ-4bit-128g",
-            "vicuna-13B-1.1-GPTQ-4bit-128g.latest.safetensors",
-        ).predict
+        remote = Inference.remote(body.repo_id)
+
+        def generate_cummulative():
+            full = ""
+            for text in remote.predict.call(
+                content,
+                generation_args=body.generation_args,
+                lora=body.lora,
+            ):
+                full += text
+                print(text, end="", flush=True)
+                yield full
 
         return StreamingResponse(
-            predict(
-                content,
-                body.generation_args,
-                body.lora,
-            ),
-            headers={
-                "Modal-Call-ID": predict.object_id,
-                "Access-Control-Expose-Headers": "Modal-Call-ID",
-            },
+            generate_cummulative(),
             media_type="text/event-stream",
         )
+
+    @web_app.get("/finetunes")
+    async def list_finetunes(base_model_repo_id: str):
+        finetunes_path = f"/finetunes/{base_model_repo_id.replace('/', '--')}"
+        return os.listdir(finetunes_path) if os.path.exists(finetunes_path) else []
+
+    @web_app.post("/train")
+    async def train(body: TrainRequest, background_tasks: BackgroundTasks):
+        background_tasks.add_task(
+            train_finetune,
+            body.base_model_repo_id,
+            body.dataset_repo_id,
+            body.dataset_feature,
+            body.model_name,
+            body.wandb_key,
+        )
+
+        return {"status": "ok"}
 
     @web_app.delete("/generation/{call_id}")
     async def cancel_generation(call_id: str):

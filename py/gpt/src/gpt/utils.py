@@ -58,13 +58,11 @@ class Iteratorize:
         self.stop_now = True
 
 
-class StreamAndStop(StoppingCriteria):
-    def __init__(self, tokenizer, callback, stop="### Human:"):
+class Stop(StoppingCriteria):
+    def __init__(self, tokenizer, stop="### Human:"):
         self.tokenizer = tokenizer
-        self.callback = callback
         self.stop = stop
 
     def __call__(self, input_ids, *args, **kwargs) -> bool:
         prediction = self.tokenizer.decode(input_ids[0], skip_special_tokens=True)
-        self.callback(prediction)
         return prediction.endswith(self.stop)

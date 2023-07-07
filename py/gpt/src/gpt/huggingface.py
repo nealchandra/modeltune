@@ -17,7 +17,7 @@ class HuggingfaceClient:
         # login(self.token)
         self._download_model(
             repo_id=repo_id,
-            ignore_patterns="*.pt",
+            # ignore_patterns="*.pt",
             cache_dir=self.cache_dir,
             token=self.token,
         )

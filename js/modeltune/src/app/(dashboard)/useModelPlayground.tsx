@@ -13,8 +13,7 @@ type EditorProps = {
 };
 
 export type GenerationParams = {
-  repoId: string;
-  modelPath: string;
+  repoId: BASE_MODELS;
   lora?: string;
 
   temperature: number;
@@ -24,9 +23,32 @@ export type GenerationParams = {
   stoppingSequence: string;
 };
 
+export enum BASE_MODELS {
+  FALCON = 'tiiuae/falcon-7b-instruct',
+  VICUNA = 'TheBloke/Wizard-Vicuna-13B-Uncensored-HF',
+  MPT = 'mosaicml/mpt-30b-chat',
+}
+
+export const BASE_MODEL_NAMES: { [key in BASE_MODELS]: string } = {
+  'tiiuae/falcon-7b-instruct': 'Falcon 7B Instruct',
+  'TheBloke/Wizard-Vicuna-13B-Uncensored-HF': 'Vicuna 13B',
+  'mosaicml/mpt-30b-chat': 'MPT 30B Chat',
+};
+
+const BASE_TEMPLATES: { [key in BASE_MODELS]: string } = {
+  'tiiuae/falcon-7b-instruct': `You are a helpful AI assistant
+User: What is a llama?
+Assistant:`,
+  'TheBloke/Wizard-Vicuna-13B-Uncensored-HF': `You are a helpful AI assistant ###
+### Human: What is a llama?
+### Assistant:`,
+  'mosaicml/mpt-30b-chat': `You are a helpful AI assistant
+User: What is a llama?
+Assistant:`,
+};
+
 export const useModelPlayground = ({
   repoId,
-  modelPath,
   lora,
   temperature,
   maxTokens,
@@ -71,7 +93,6 @@ export const useModelPlayground = ({
         // setFnId(fnId);
 
         const prediction = decoder.decode(value);
-
         if (initial) {
           const [_, newTokens] = prediction.split(initial);
           setHtml(`${initial}<mark>${newTokens}</mark>`);
@@ -88,8 +109,8 @@ export const useModelPlayground = ({
 
   // reset on model change
   React.useEffect(() => {
-    setHtml(TEMPLATE_TEXT);
-  }, [repoId, modelPath, lora]);
+    setHtml(BASE_TEMPLATES[repoId]);
+  }, [repoId, lora]);
 
   // clear marked text regex and set html
   const onChange = React.useCallback((html: string) => {
@@ -99,16 +120,16 @@ export const useModelPlayground = ({
   const onSubmit = React.useCallback(() => {
     const sanitized = sanitizeHtml(html, {
       allowedTags: [],
+      selfClosing: ['br'],
     });
-    const prompt = `${html}`.replace('<mark>', '').replace('</mark>', '');
+    setHtml(sanitized);
 
     const options = {
       method: 'POST',
       body: JSON.stringify({
         repo_id: repoId,
-        model_path: modelPath,
-        lora: 'nealchandra/vicuna-13b-lora-lt-full',
-        content: prompt,
+        lora: lora,
+        content: sanitized,
         generation_args: {
           temperature,
           max_tokens: maxTokens,
@@ -119,8 +140,8 @@ export const useModelPlayground = ({
       headers: { 'Content-Type': 'application/json' },
     };
 
-    submit(options, prompt);
-  }, [repoId, modelPath, lora, html]);
+    submit(options, sanitized);
+  }, [repoId, lora, html, temperature, maxTokens, topP, stoppingSequence]);
 
   const onCancel = React.useCallback(async () => {
     controller.abort();
