@@ -21,13 +21,18 @@ class Message(TypedDict):
 
 
 def train_finetune(
-    base_model_repo_id, dataset_repo_id: str, dataset_feature: str, model_name: str
+    base_model_repo_id,
+    dataset_repo_id: str,
+    dataset_feature: str,
+    model_name: str,
+    wanb_key: Optional[str],
 ):
     remote = Inference.remote(base_model_repo_id)
     remote.train.call(
         dataset_repo_id,
         dataset_feature,
         f"{base_model_repo_id.replace('/', '--')}/{model_name}",
+        wanb_key,
     )
 
 
@@ -75,6 +80,7 @@ def web():
         dataset_repo_id: str
         dataset_feature: str
         model_name: str
+        wandb_key: Optional[str]
 
     @web_app.post("/generate")
     async def generate(body: ChatCompletionRequest, request: Request):
@@ -111,6 +117,7 @@ def web():
             body.dataset_repo_id,
             body.dataset_feature,
             body.model_name,
+            body.wandb_key,
         )
 
         return {"status": "ok"}

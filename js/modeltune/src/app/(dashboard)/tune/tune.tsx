@@ -6,6 +6,13 @@ import { autocompleteDatasets, getDatasetInfo } from '../actions';
 import { BASE_MODELS, BASE_MODEL_NAMES } from '../useModelPlayground';
 import { Button } from '@app/components/ui/button';
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@app/components/ui/card';
+import {
   Command,
   CommandEmpty,
   CommandGroup,
@@ -80,16 +87,18 @@ const formSchema = z.object({
   //   .max(5, {
   //     message: 'Maximum training length is 5 epochs',
   //   }),
-  wandbKey: z.string().uuid().nullable(),
+  wandbKey: z.string().nullable(),
   feature: z.string().nonempty({ message: 'Must select a feature' }),
 });
 
-export default function ProfileForm() {
+export default function Tune() {
   // const [data, setData] = React.useState<Array<Object>>();
   const [datasets, setDatasets] = React.useState<
     Array<{ value: string; label: string; private: boolean }>
   >([]);
   const [features, setFeatures] = React.useState<Array<string>>([]);
+  const [submissionData, setSubmissionData] =
+    React.useState<Partial<z.infer<typeof formSchema>>>();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -106,6 +115,8 @@ export default function ProfileForm() {
   const isPrivateDataset = form.watch('dataset.private');
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    setSubmissionData(values);
+
     const response = await fetch(
       `https://nealcorp--gpt-service-web.modal.run/train`,
       {
@@ -115,6 +126,7 @@ export default function ProfileForm() {
           base_model_repo_id: values.baseModel,
           dataset_repo_id: values.dataset.id,
           dataset_feature: values.feature,
+          wandb_key: values.wandbKey,
         }),
         headers: { 'Content-Type': 'application/json' },
       }
@@ -135,10 +147,8 @@ export default function ProfileForm() {
     }
   }, [datasetWatch]);
 
-  const [ref, setRef] = React.useState<HTMLInputElement | null>(null);
-
   const updateDatasets = (e: Event) =>
-    autocompleteDatasets(e.target!.value).then((resp) => {
+    autocompleteDatasets((e.target as HTMLInputElement).value).then((resp) => {
       setDatasets(resp);
     });
 
@@ -146,6 +156,33 @@ export default function ProfileForm() {
     debounce(updateDatasets, 200),
     []
   );
+
+  if (submissionData) {
+    return (
+      <Card className="w-[350px]">
+        <CardHeader>
+          <CardTitle>{submissionData.name}</CardTitle>
+          <CardDescription>
+            Finetune started. You can monitor the run on wandb.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-2">
+            <p>
+              <b>Base Model:</b>
+            </p>
+            <p>{submissionData.baseModel}</p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <p>
+              <b>Dataset:</b>
+            </p>
+            <p>{submissionData.dataset!.id}</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Form {...form}>

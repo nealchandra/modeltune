@@ -2,7 +2,7 @@
 
 export const autocompleteDatasets = async (
   txt: string
-): Promise<{ label: string; value: string }[]> => {
+): Promise<{ label: string; value: string; private: boolean }[]> => {
   // const x = await fetch(
   //   'https://huggingface.co/api/quicksearch?q=lt-full&type=all',
   //   {
@@ -26,7 +26,7 @@ export const autocompleteDatasets = async (
     }
   );
   const result = await response.json();
-  return result.map((ds) => ({
+  return result.map((ds: any) => ({
     value: ds.id.toLowerCase(),
     label: ds.id.toLowerCase(),
     private: ds.private,

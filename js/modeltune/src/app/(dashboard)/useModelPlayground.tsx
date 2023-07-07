@@ -129,7 +129,7 @@ export const useModelPlayground = ({
       method: 'POST',
       body: JSON.stringify({
         repo_id: repoId,
-        // lora: 'nealchandra/vicuna-13b-lora-lt-full',
+        lora: lora,
         content: sanitized,
         generation_args: {
           temperature,

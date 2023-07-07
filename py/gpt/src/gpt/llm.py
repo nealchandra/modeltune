@@ -5,6 +5,7 @@ from typing import Literal, Optional, TypedDict, Union
 
 import torch
 import transformers
+import wandb
 from datasets import load_dataset
 from huggingface_hub import (
     _CACHED_NO_EXIST,
@@ -61,6 +62,10 @@ class GenerationArgs(TypedDict):
     stopping_sequence: Optional[str]
 
 
+class TrainerArgs(TypedDict):
+    report_to_wandb: bool
+
+
 class LLM:
     model_type: Union[Literal["Llama"], Literal["Falcon"]]
     model: Optional[PreTrainedModel]
@@ -89,21 +94,18 @@ class LLM:
             device_map="auto",
         )
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        # self.model = torch.compile(self.model)
 
-    def apply_lora(self, lora: str):
+    def apply_lora(self, lora_path: str):
         if not self.model:
             raise Exception("Model not loaded")
 
         self.model = PeftModel.from_pretrained(
             self.model,
-            lora,
+            lora_path,
             device_map={"": 0},
             torch_dtype=torch.float32,
-            cache_dir=self.client.cache_dir,
-            use_auth_token=self.client.token,
         )
-        print("{} Lora Applied.".format(lora))
+        print("{} Lora Applied.".format(lora_path))
 
     def remove_lora(self):
         if not self.model:
@@ -111,7 +113,13 @@ class LLM:
 
         self.model = PeftModel.get_base_model(self.model)
 
-    def train(self, dataset_path, dataset_feature, output_dir, train_args={}):
+    def train(
+        self,
+        dataset_path,
+        dataset_feature,
+        output_dir,
+        train_args: Optional[TrainerArgs] = None,
+    ):
         self.model.train()
 
         self.model = prepare_model_for_kbit_training(self.model)
@@ -155,6 +163,8 @@ class LLM:
                 logging_steps=1,
                 output_dir=output_dir,
                 save_total_limit=2,
+                report_to="wandb" if train_args["report_to_wandb"] else None,
+                run_name=f"modeltune-{output_dir.split('/')[-1]}",
             ),
             data_collator=DataCollatorForLanguageModeling(self.tokenizer, mlm=False),
         )

@@ -43,7 +43,15 @@ class Inference(ClsMixin):
         self.llm.load_model(model_path)
 
     @modal.method()
-    def train(self, dataset_repo_id: str, dataset_feature: str, output_name: str):
+    def train(
+        self,
+        dataset_repo_id: str,
+        dataset_feature: str,
+        output_name: str,
+        wandb_key: Optional[str] = None,
+    ):
+        import wandb
+
         dataset_path = f"/models/datasets/{dataset_repo_id.replace('/', '--')}"
         if not os.path.exists(dataset_path):
             download_model(
@@ -53,8 +61,13 @@ class Inference(ClsMixin):
                 local_dir_use_symlinks=False,
             )
 
-        self.llm.train(dataset_path, dataset_feature, f"/finetunes/{output_name}")
-        print(os.listdir("/finetunes"))
+        wandb.login(key=wandb_key)
+        self.llm.train(
+            dataset_path,
+            dataset_feature,
+            f"/finetunes/{output_name}",
+            {"report_to_wandb": wandb_key is not None},
+        )
 
     @modal.method(is_generator=True)
     def predict(self, prompt, generation_args={}, lora=None):
@@ -65,6 +78,7 @@ class Inference(ClsMixin):
             self.llm.remove_lora()
 
         if lora is not None:
-            self.llm.apply_lora(lora)
+            lora_path = f"/finetunes/{self.repo_id.replace('/', '--')}/{lora.replace('/', '--')}"
+            self.llm.apply_lora(lora_path)
 
         return self.llm.generate_streaming(generation_args, prompt)
