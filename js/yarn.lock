@@ -1805,6 +1805,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/mustache@npm:^4.2.2":
+  version: 4.2.2
+  resolution: "@types/mustache@npm:4.2.2"
+  checksum: 1fa67a519f4302c96615524be4c8248067da02ca047bae9d4c4bb79977135ac7c15dcc388e7c70b8a817b9497004d5ca5c77a155dcb096bea16d53d4cdbe75d2
+  languageName: node
+  linkType: hard
+
 "@types/node@npm:20.1.1":
   version: 20.1.1
   resolution: "@types/node@npm:20.1.1"
@@ -5077,6 +5084,7 @@ __metadata:
     "@radix-ui/react-slot": ^1.0.2
     "@tanstack/react-table": ^8.9.1
     "@types/lodash": ^4.14.195
+    "@types/mustache": ^4.2.2
     "@types/node": 20.1.1
     "@types/react": 18.2.6
     "@types/react-dom": 18.2.4
@@ -5089,6 +5097,7 @@ __metadata:
     eslint-config-next: 13.4.1
     lodash: ^4.17.21
     lucide-react: ^0.256.0
+    mustache: ^4.2.0
     next: 13.4.1
     next-themes: ^0.2.1
     postcss: 8.4.23
@@ -5136,6 +5145,15 @@ __metadata:
     arrify: ^2.0.1
     minimatch: ^3.0.4
   checksum: bdb6a98dad4e919d9a1a2a0db872f44fa2337315f2fd5827d91ae005cf22f4425782bdfa97c10b80d567f0cb3c226c31f4e85f8f6a4a4be4facf9af0de1bb0c2
+  languageName: node
+  linkType: hard
+
+"mustache@npm:^4.2.0":
+  version: 4.2.0
+  resolution: "mustache@npm:4.2.0"
+  bin:
+    mustache: bin/mustache
+  checksum: 928fcb63e3aa44a562bfe9b59ba202cccbe40a46da50be6f0dd831b495be1dd7e38ca4657f0ecab2c1a89dc7bccba0885eab7ee7c1b215830da765758c7e0506
   languageName: node
   linkType: hard
 

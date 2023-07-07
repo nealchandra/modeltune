@@ -31,6 +31,7 @@
     "eslint-config-next": "13.4.1",
     "lodash": "^4.17.21",
     "lucide-react": "^0.256.0",
+    "mustache": "^4.2.0",
     "next": "13.4.1",
     "next-themes": "^0.2.1",
     "postcss": "8.4.23",
@@ -46,6 +47,7 @@
     "zod": "^3.21.4"
   },
   "devDependencies": {
-    "@types/lodash": "^4.14.195"
+    "@types/lodash": "^4.14.195",
+    "@types/mustache": "^4.2.2"
   }
 }
