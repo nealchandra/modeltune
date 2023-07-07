@@ -2634,6 +2634,15 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "linkType": "HARD"\
         }]\
       ]],\
+      ["@types/lodash", [\
+        ["npm:4.14.195", {\
+          "packageLocation": "./.yarn/cache/@types-lodash-npm-4.14.195-a2a8254638-39b75ca635.zip/node_modules/@types/lodash/",\
+          "packageDependencies": [\
+            ["@types/lodash", "npm:4.14.195"]\
+          ],\
+          "linkType": "HARD"\
+        }]\
+      ]],\
       ["@types/minimatch", [\
         ["npm:3.0.5", {\
           "packageLocation": "./.yarn/cache/@types-minimatch-npm-3.0.5-802bb0797f-c41d136f67.zip/node_modules/@types/minimatch/",\
@@ -6472,6 +6481,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@radix-ui/react-slider", "virtual:94baf1363c147f745ccb031bdb77fb69b7fbca68d8941504db11281fe6a42afba84dd9cdf80953bce21e9f6f86d8307eb0dba0db875c2f2b23d0d3b953c9ab3d#npm:1.1.1"],\
             ["@radix-ui/react-slot", "virtual:94baf1363c147f745ccb031bdb77fb69b7fbca68d8941504db11281fe6a42afba84dd9cdf80953bce21e9f6f86d8307eb0dba0db875c2f2b23d0d3b953c9ab3d#npm:1.0.2"],\
             ["@tanstack/react-table", "virtual:94baf1363c147f745ccb031bdb77fb69b7fbca68d8941504db11281fe6a42afba84dd9cdf80953bce21e9f6f86d8307eb0dba0db875c2f2b23d0d3b953c9ab3d#npm:8.9.1"],\
+            ["@types/lodash", "npm:4.14.195"],\
             ["@types/node", "npm:20.1.1"],\
             ["@types/react", "npm:18.2.6"],\
             ["@types/react-dom", "npm:18.2.4"],\
