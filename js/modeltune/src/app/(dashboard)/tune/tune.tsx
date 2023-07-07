@@ -262,7 +262,9 @@ export default function Tune() {
                   <Command>
                     <CommandInput
                       placeholder="Enter dataset name..."
-                      onInputCapture={updateDatasetsDebounced}
+                      onInputCapture={
+                        updateDatasetsDebounced as unknown as React.FormEventHandler<HTMLInputElement>
+                      }
                     />
                     <CommandEmpty>No dataset found.</CommandEmpty>
                     <CommandGroup>
