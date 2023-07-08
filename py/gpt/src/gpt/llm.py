@@ -3,9 +3,9 @@ import time
 from threading import Thread
 from typing import Literal, Optional, TypedDict, Union
 
+import chevron
 import torch
 import transformers
-import wandb
 from datasets import load_dataset
 from huggingface_hub import (
     _CACHED_NO_EXIST,
@@ -42,7 +42,7 @@ MICRO_BATCH_SIZE = 4  # this could actually be 5 but i like powers of 2
 BATCH_SIZE = 256
 GRADIENT_ACCUMULATION_STEPS = BATCH_SIZE // MICRO_BATCH_SIZE
 # EPOCHS = 3  # we don't need 3 tbh
-EPOCHS = 1
+EPOCHS = 2
 LEARNING_RATE = 3e-4  # the Karpathy constant
 CUTOFF_LEN = 256  # 256 accounts for about 96% of the data
 LORA_R = 8
@@ -116,7 +116,7 @@ class LLM:
     def train(
         self,
         dataset_path,
-        dataset_feature,
+        prompt_template,
         output_dir,
         train_args: Optional[TrainerArgs] = None,
     ):
@@ -143,12 +143,13 @@ class LLM:
         data = load_dataset(dataset_path)
         data = (
             data["train"]
-            .select(range(10))
-            .map(lambda samples: self.tokenizer(samples[dataset_feature]))
+            .select(range(20000))
+            .map(lambda row: self.tokenizer(chevron.render(prompt_template, row)))
         )
 
         self.tokenizer.pad_token = self.tokenizer.eos_token
 
+        os.environ["WANDB_PROJECT"] = "modeltune"
         trainer = transformers.Trainer(
             model=model,
             train_dataset=data,
@@ -159,12 +160,11 @@ class LLM:
                 learning_rate=LEARNING_RATE,
                 fp16=True,
                 warmup_steps=2,
-                max_steps=20,
                 logging_steps=1,
                 output_dir=output_dir,
                 save_total_limit=2,
-                report_to="wandb" if train_args["report_to_wandb"] else None,
-                run_name=f"modeltune-{output_dir.split('/')[-1]}",
+                report_to="wandb" if train_args["report_to_wandb"] else "none",
+                run_name=f"{output_dir.split('/')[-1]}",
             ),
             data_collator=DataCollatorForLanguageModeling(self.tokenizer, mlm=False),
         )
@@ -178,7 +178,7 @@ class LLM:
             **{
                 "temperature": 0.7,
                 "top_p": 0.70,
-                "repetition_penalty": 1 / 0.85,
+                "repetition_penalty": 50.0,
                 "max_new_tokens": 512,
                 "do_sample": True,
                 **generation_args,

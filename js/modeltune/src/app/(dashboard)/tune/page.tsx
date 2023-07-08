@@ -7,7 +7,7 @@ export default function TuningPage() {
   return (
     <Shell>
       <div className="hidden h-full flex-col md:flex">
-        <div className="grid gap-12 grid-cols-3">
+        <div className="grid gap-12 grid-cols-2">
           <Tune />
         </div>
       </div>

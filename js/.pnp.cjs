@@ -2652,6 +2652,15 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "linkType": "HARD"\
         }]\
       ]],\
+      ["@types/mustache", [\
+        ["npm:4.2.2", {\
+          "packageLocation": "./.yarn/cache/@types-mustache-npm-4.2.2-0447ded981-1fa67a519f.zip/node_modules/@types/mustache/",\
+          "packageDependencies": [\
+            ["@types/mustache", "npm:4.2.2"]\
+          ],\
+          "linkType": "HARD"\
+        }]\
+      ]],\
       ["@types/node", [\
         ["npm:18.15.11", {\
           "packageLocation": "./.yarn/cache/@types-node-npm-18.15.11-fd8ceaaffd-977b4ad047.zip/node_modules/@types/node/",\
@@ -6482,6 +6491,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@radix-ui/react-slot", "virtual:94baf1363c147f745ccb031bdb77fb69b7fbca68d8941504db11281fe6a42afba84dd9cdf80953bce21e9f6f86d8307eb0dba0db875c2f2b23d0d3b953c9ab3d#npm:1.0.2"],\
             ["@tanstack/react-table", "virtual:94baf1363c147f745ccb031bdb77fb69b7fbca68d8941504db11281fe6a42afba84dd9cdf80953bce21e9f6f86d8307eb0dba0db875c2f2b23d0d3b953c9ab3d#npm:8.9.1"],\
             ["@types/lodash", "npm:4.14.195"],\
+            ["@types/mustache", "npm:4.2.2"],\
             ["@types/node", "npm:20.1.1"],\
             ["@types/react", "npm:18.2.6"],\
             ["@types/react-dom", "npm:18.2.4"],\
@@ -6494,6 +6504,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["eslint-config-next", "virtual:94baf1363c147f745ccb031bdb77fb69b7fbca68d8941504db11281fe6a42afba84dd9cdf80953bce21e9f6f86d8307eb0dba0db875c2f2b23d0d3b953c9ab3d#npm:13.4.1"],\
             ["lodash", "npm:4.17.21"],\
             ["lucide-react", "virtual:94baf1363c147f745ccb031bdb77fb69b7fbca68d8941504db11281fe6a42afba84dd9cdf80953bce21e9f6f86d8307eb0dba0db875c2f2b23d0d3b953c9ab3d#npm:0.256.0"],\
+            ["mustache", "npm:4.2.0"],\
             ["next", "virtual:94baf1363c147f745ccb031bdb77fb69b7fbca68d8941504db11281fe6a42afba84dd9cdf80953bce21e9f6f86d8307eb0dba0db875c2f2b23d0d3b953c9ab3d#npm:13.4.1"],\
             ["next-themes", "virtual:94baf1363c147f745ccb031bdb77fb69b7fbca68d8941504db11281fe6a42afba84dd9cdf80953bce21e9f6f86d8307eb0dba0db875c2f2b23d0d3b953c9ab3d#npm:0.2.1"],\
             ["postcss", "npm:8.4.23"],\
@@ -6546,6 +6557,15 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["array-union", "npm:2.1.0"],\
             ["arrify", "npm:2.0.1"],\
             ["minimatch", "npm:3.1.2"]\
+          ],\
+          "linkType": "HARD"\
+        }]\
+      ]],\
+      ["mustache", [\
+        ["npm:4.2.0", {\
+          "packageLocation": "./.yarn/cache/mustache-npm-4.2.0-1fe3d6d77a-928fcb63e3.zip/node_modules/mustache/",\
+          "packageDependencies": [\
+            ["mustache", "npm:4.2.0"]\
           ],\
           "linkType": "HARD"\
         }]\
