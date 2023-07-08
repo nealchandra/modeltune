@@ -23,14 +23,14 @@ class Message(TypedDict):
 def train_finetune(
     base_model_repo_id,
     dataset_repo_id: str,
-    dataset_feature: str,
+    prompt_template: str,
     model_name: str,
     wanb_key: Optional[str],
 ):
     remote = Inference.remote(base_model_repo_id)
     remote.train.call(
         dataset_repo_id,
-        dataset_feature,
+        prompt_template,
         f"{base_model_repo_id.replace('/', '--')}/{model_name}",
         wanb_key,
     )
@@ -78,7 +78,7 @@ def web():
     class TrainRequest(BaseModel):
         base_model_repo_id: str
         dataset_repo_id: str
-        dataset_feature: str
+        prompt_template: str
         model_name: str
         wandb_key: Optional[str]
 
@@ -115,7 +115,7 @@ def web():
             train_finetune,
             body.base_model_repo_id,
             body.dataset_repo_id,
-            body.dataset_feature,
+            body.prompt_template,
             body.model_name,
             body.wandb_key,
         )

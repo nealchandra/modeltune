@@ -133,7 +133,7 @@ export default function Tune() {
           model_name: values.name,
           base_model_repo_id: values.baseModel,
           dataset_repo_id: values.dataset.id,
-          dataset_feature: values.feature,
+          prompt_template: values.promptTemplate,
           wandb_key: values.wandbKey,
         }),
         headers: { 'Content-Type': 'application/json' },
@@ -149,9 +149,7 @@ export default function Tune() {
     if (!dataset) return;
 
     if (!dataset.private) {
-      console.log('calling');
       getDatasetInfo(dataset.id_case_sensitive).then((response) => {
-        console.log(response);
         const features = Object.keys(response.dataset_info.features);
         setFeatures(features);
         form.setValue('feature', features?.[0]);

@@ -27,7 +27,6 @@ export const DatasetPreview = ({
 
   React.useEffect(() => {
     const updateRows = async () => {
-      console.log(dataset_id);
       if (dataset_id) {
         const resp = await getDatasetRows(dataset_id);
         if (resp.error) {
@@ -76,7 +75,7 @@ export const DatasetPreview = ({
       ) : null}
       <Card className="w-[350px] my-2 min-h-full min-w-full">
         <CardContent className="pt-4">
-          <pre className="break-words whitespace-pre-line">
+          <pre className="break-words whitespace-pre-wrap">
             {templateError ? (
               <p className="text-destructive">Error: Invalid prompt template</p>
             ) : (

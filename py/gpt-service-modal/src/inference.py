@@ -20,6 +20,7 @@ from .download import download_model
     },
     concurrency_limit=1,
     container_idle_timeout=300,
+    timeout=60 * 60 * 24,  # training takes a long time
 )
 class Inference(ClsMixin):
     def __init__(
@@ -42,11 +43,11 @@ class Inference(ClsMixin):
         self.llm = LLM()
         self.llm.load_model(model_path)
 
-    @modal.method()
+    @modal.method()  # training jobs can take a long time
     def train(
         self,
         dataset_repo_id: str,
-        dataset_feature: str,
+        prompt_template: str,
         output_name: str,
         wandb_key: Optional[str] = None,
     ):
@@ -61,10 +62,12 @@ class Inference(ClsMixin):
                 local_dir_use_symlinks=False,
             )
 
-        wandb.login(key=wandb_key)
+        if wandb_key:
+            wandb.login(key=wandb_key)
+
         self.llm.train(
             dataset_path,
-            dataset_feature,
+            prompt_template,
             f"/finetunes/{output_name}",
             {"report_to_wandb": wandb_key is not None},
         )
