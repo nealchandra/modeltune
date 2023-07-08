@@ -1,0 +1,38 @@
+version: "3.8"
+
+x-database-credentials: &database-credentials
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: db
+
+services:
+  app:
+    build:
+      context: ./js
+      dockerfile: ./modeltune/Dockerfile
+    ports:
+      - 3000:3000
+    environment:
+      NODE_ENV: development
+      <<: *database-credentials
+      POSTGRES_HOST: postgres:5432
+
+    command: yarn dev
+    volumes:
+      - ./js:/js
+      - /js/.yarn/
+    depends_on:
+      - postgres
+
+  postgres:
+    container_name: postgres
+    image: postgres
+    environment:
+      <<: *database-credentials
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+volumes:
+  postgres_data:

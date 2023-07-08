@@ -3,7 +3,8 @@
   "workspaces": [
     "modeltune",
     "prompt-engine",
-    "playground"
+    "playground",
+    "db"
   ],
   "packageManager": "yarn@3.5.0",
   "devDependencies": {
