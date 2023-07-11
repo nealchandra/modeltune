@@ -7,6 +7,8 @@ WORKDIR /js
 COPY .yarn ./.yarn
 COPY .pnp.cjs .yarnrc.yml package.json yarn.lock* ./
 RUN yarn install
+RUN yarn add @next/swc-linux-x64-gnu
+
 
 FROM node:lts-alpine AS runner
 WORKDIR /js
@@ -14,8 +16,6 @@ WORKDIR /js
 COPY --from=deps /js/.yarn ./.yarn
 COPY --from=deps /js/.pnp.cjs ./pnp.cjs
 COPY . .
-
-RUN yarn add @next/swc-linux-x64-gnu
 
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
