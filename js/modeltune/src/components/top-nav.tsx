@@ -3,7 +3,7 @@
 import * as React from 'react';
 
 import { Icons } from '@app/components/icons';
-// import { MobileNav } from '@/components/mobile-nav';
+import { type User } from '@app/lib/auth';
 import { cn } from '@app/lib/utils';
 import Link from 'next/link';
 import { useSelectedLayoutSegment } from 'next/navigation';
@@ -16,10 +16,11 @@ export type NavItem = {
 
 interface TopNavProps {
   items?: NavItem[];
+  user?: User;
   children?: React.ReactNode;
 }
 
-export function TopNav({ items, children }: TopNavProps) {
+export function TopNav({ items, user, children }: TopNavProps) {
   const segment = useSelectedLayoutSegment();
   const [showMobileMenu, setShowMobileMenu] = React.useState<boolean>(false);
 
@@ -55,9 +56,6 @@ export function TopNav({ items, children }: TopNavProps) {
         {showMobileMenu ? <Icons.close /> : <Icons.logo />}
         <span className="font-bold">Menu</span>
       </button>
-      {/* {showMobileMenu && items && (
-        <MobileNav items={items}>{children}</MobileNav>
-      )} */}
     </div>
   );
 }

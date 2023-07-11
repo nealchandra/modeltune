@@ -17,6 +17,7 @@
     "pretty-quick": "^3.1.3"
   },
   "dependencies": {
+    "@next/swc-linux-arm64-musl": "^13.4.9",
     "typescript": "^4.8.4"
   }
 }

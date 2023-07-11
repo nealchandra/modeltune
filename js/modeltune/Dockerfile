@@ -8,6 +8,7 @@ COPY .yarn ./.yarn
 COPY .pnp.cjs .yarnrc.yml package.json yarn.lock* ./
 RUN yarn install
 RUN yarn add @next/swc-linux-x64-gnu
+RUN yarn add @next/swc-linux-arm64-musl@npm:13.4.1
 
 
 FROM node:lts-alpine AS runner
@@ -20,7 +21,7 @@ COPY . .
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
-WORKDIR /js/modeltune
+RUN yarn install
 
 EXPOSE 3000
 

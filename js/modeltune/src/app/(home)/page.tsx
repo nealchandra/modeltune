@@ -1,23 +1,17 @@
 import { buttonVariants } from '@app/components/ui/button';
-// import { UserAuthForm } from '@app/examples/authentication/components/user-auth-form';
+import { Card, CardContent, CardTitle } from '@app/components/ui/card';
+import { getCurrentUser } from '@app/lib/session';
 import { cn } from '@app/lib/utils';
-import { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
 
-import { UserAuthForm } from './user-auth-form';
+export default async function HomePage() {
+  const user = await getCurrentUser();
 
-export const metadata: Metadata = {
-  title: 'Authentication',
-  description: 'Authentication forms built using the components.',
-};
-
-export default function AuthenticationPage() {
   return (
-    <div className="container relative hidden h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-      <div className="relative bg-[url('https://image.lexica.art/full_jpg/3d776c4e-1822-41bf-ae6f-751e81756b48')] bg-no-repeat bg-cover bg-center bg-fixed hidden h-full text-white dark:border-r lg:flex">
-        <div className="w-full h-full flex backdrop-blur-md flex-col p-10">
-          <div className="relative z-20 flex items-center text-lg font-medium">
+    <div className="container relative hidden h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-1 lg:px-0">
+      <div className="relative hidden h-full text-white dark:border-r lg:flex">
+        <div className="w-full h-full flex items-center justify-center flex-col p-10">
+          <div className="relative z-20 flex items-center text-lg font-medium m-10">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -32,31 +26,32 @@ export default function AuthenticationPage() {
             </svg>
             Modeltune
           </div>
-        </div>
-      </div>
-      <div className="w-full h-full flex  justify-center items-center backdrop-blur-md">
-        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-          <div className="flex flex-col space-y-2 text-center">
-            <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
-          </div>
-          <UserAuthForm />
-          <p className="px-8 text-center text-sm text-muted-foreground">
-            By clicking continue, you agree to our{' '}
+          {user ? (
+            <div className="flex">
+              <Link
+                type="button"
+                className={cn(buttonVariants({ variant: 'default' }), 'mx-2')}
+                href="/playground"
+              >
+                Dashboard
+              </Link>
+              <Link
+                type="button"
+                className={cn(buttonVariants({ variant: 'outline' }), 'mx-2')}
+                href="/api/auth/signout"
+              >
+                Sign Out
+              </Link>
+            </div>
+          ) : (
             <Link
-              href="/terms"
-              className="underline underline-offset-4 hover:text-primary"
+              type="button"
+              className={cn(buttonVariants({ variant: 'outline' }))}
+              href="/login"
             >
-              Terms of Service
-            </Link>{' '}
-            and{' '}
-            <Link
-              href="/privacy"
-              className="underline underline-offset-4 hover:text-primary"
-            >
-              Privacy Policy
+              Login
             </Link>
-            .
-          </p>
+          )}
         </div>
       </div>
     </div>
