@@ -13,8 +13,8 @@ export const metadata: Metadata = {
 
 export default function AuthenticationPage() {
   return (
-    <div className="container relative hidden h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-      <div className="relative bg-[url('https://image.lexica.art/full_jpg/3d776c4e-1822-41bf-ae6f-751e81756b48')] bg-no-repeat bg-cover bg-center bg-fixed hidden h-full text-white dark:border-r lg:flex">
+    <div className="container relative hidden h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-3 lg:px-0">
+      <div className="relative col-span-2 bg-[url('https://image.lexica.art/full_jpg/7952698d-5037-4849-88cc-da5ce84905a3')] bg-no-repeat bg-cover bg-center bg-fixed hidden h-full text-white dark:border-r lg:flex">
         <div className="w-full h-full flex backdrop-blur-md flex-col p-10">
           <div className="relative z-20 flex items-center text-lg font-medium">
             <svg

@@ -46,7 +46,7 @@ export default async function HomePage() {
           ) : (
             <Link
               type="button"
-              className={cn(buttonVariants({ variant: 'outline' }))}
+              className={cn(buttonVariants({ variant: 'default' }))}
               href="/login"
             >
               Login
