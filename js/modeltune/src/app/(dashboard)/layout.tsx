@@ -1,7 +1,6 @@
 import { SiteFooter } from '@app/components/footer';
 import { TopNav } from '@app/components/top-nav';
 import { getCurrentUser } from '@app/lib/session';
-import { notFound } from 'next/navigation';
 
 interface DashboardLayoutProps {
   children?: React.ReactNode;
