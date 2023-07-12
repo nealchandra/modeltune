@@ -1,6 +1,7 @@
-import { ThemeProvider } from '@app/components/theme-provider';
 import { cn } from '@app/lib/utils';
 import { Inter } from 'next/font/google';
+
+import { Providers } from './providers';
 
 import './globals.css';
 
@@ -29,9 +30,7 @@ export default function RootLayout({
           // fontHeading.variable
         )}
       >
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          {children}
-        </ThemeProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
