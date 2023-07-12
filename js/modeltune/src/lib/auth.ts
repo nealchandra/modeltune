@@ -4,9 +4,7 @@ import { Adapter } from 'next-auth/adapters';
 import GithubProvider from 'next-auth/providers/github';
 import GoogleProvider from 'next-auth/providers/google';
 
-import { PrismaClient } from '@js/db';
-
-const prisma = new PrismaClient();
+import { prisma } from '@js/db';
 
 export type User = DefaultSession['user'];
 
