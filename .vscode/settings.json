@@ -5,8 +5,8 @@
     "**/.pnp.*": true
   },
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "prettier.prettierPath": "js/.yarn/sdks/prettier/index.js",
-  "typescript.tsdk": "js/.yarn/sdks/typescript/lib",
+  "prettier.prettierPath": "./js/node_modules/prettier/index.js",
+  "typescript.tsdk": "./js/node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter",
