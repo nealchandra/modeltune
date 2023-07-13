@@ -4,8 +4,8 @@
   "main": "src/index.ts",
   "author": "Neal Chandra",
   "scripts": {
-    "build": "yarn node ./scripts/build.js",
-    "start": "yarn run ts-node -r tsconfig-paths/register ./src/index.ts",
+    "build": "pnpm run ./scripts/build.js",
+    "start": "pnpm run ts-node -r tsconfig-paths/register ./src/index.ts",
     "generate-client": "openapi --input http://localhost:8080/openapi.json --output ./src/client"
   },
   "dependencies": {

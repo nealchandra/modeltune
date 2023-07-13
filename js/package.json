@@ -6,7 +6,7 @@
     "playground",
     "db"
   ],
-  "packageManager": "yarn@3.5.0",
+  "packageManager": "^pnpm@8.6.7",
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "4.1.0",
     "@types/node": "^18.11.9",
@@ -17,7 +17,6 @@
     "pretty-quick": "^3.1.3"
   },
   "dependencies": {
-    "@next/swc-linux-arm64-musl": "^13.4.9",
     "typescript": "^4.8.4"
   }
 }
