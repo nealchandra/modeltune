@@ -9,9 +9,9 @@
     "prisma": "4.16.2"
   },
   "scripts": {
-    "migrate": "yarn pnpify prisma migrate dev",
-    "migrate-deploy": "yarn pnpify prisma migrate deploy",
-    "generate": "yarn pnpify prisma generate",
-    "studio": "yarn pnpify prisma studio"
+    "migrate": "prisma migrate dev",
+    "migrate-deploy": "prisma migrate deploy",
+    "generate": "prisma generate",
+    "studio": "prisma studio"
   }
 }

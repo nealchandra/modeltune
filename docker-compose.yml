@@ -6,26 +6,6 @@ x-database-credentials: &database-credentials
   POSTGRES_DB: db
 
 services:
-  app:
-    build:
-      context: ./js
-      dockerfile: ./modeltune/Dockerfile
-    ports:
-      - 3000:3000
-      - 5555:5555
-    environment:
-      NODE_ENV: development
-      <<: *database-credentials
-      POSTGRES_HOST: postgres:5432
-      POSTGRES_DIRECT_HOST: postgres:5432
-      POSTGRES_SHADOW_DB: db-shadow
-    command: yarn dev
-    volumes:
-      - ./js:/js
-      - /js/.yarn/
-    depends_on:
-      - postgres
-
   postgres:
     container_name: postgres
     image: postgres:15.3
