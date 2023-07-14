@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-import { getDatasetRows } from '../actions';
+import { getDatasetRows } from '../../_actions/hf';
 import { Alert, AlertDescription, AlertTitle } from '@app/components/ui/alert';
 import { Button } from '@app/components/ui/button';
 import { Card, CardContent } from '@app/components/ui/card';

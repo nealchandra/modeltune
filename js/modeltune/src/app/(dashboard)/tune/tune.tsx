@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 
-import { autocompleteDatasets, getDatasetInfo } from '../actions';
+import { autocompleteDatasets, getDatasetInfo } from '../../_actions/hf';
 import { BASE_MODELS, BASE_MODEL_NAMES } from '../useModelPlayground';
 import { Button } from '@app/components/ui/button';
 import {
