@@ -1,0 +1,41 @@
+{
+  "tasksRunnerOptions": {
+    "default": {
+      "runner": "nx/tasks-runners/default",
+      "options": {
+        "cacheableOperations": [
+          "build",
+          "lint",
+          { "projects": ["@js/db"], "target": "generate" }
+        ]
+      }
+    }
+  },
+  "targetDefaults": {
+    "dev": {
+      "dependsOn": [
+        "^build",
+        {
+          "projects": ["@js/db"],
+          "target": "generate"
+        }
+      ]
+    },
+    "build": {
+      "dependsOn": [
+        "^build",
+        {
+          "projects": ["@js/db"],
+          "target": "migrate-deploy"
+        },
+        {
+          "projects": ["@js/db"],
+          "target": "generate"
+        }
+      ]
+    }
+  },
+  "affected": {
+    "defaultBase": "main"
+  }
+}

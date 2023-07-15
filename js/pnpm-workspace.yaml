@@ -1,5 +1,3 @@
 packages:
-  - 'modeltune'
-  - 'prompt-engine'
-  - 'playground'
-  - 'db'
+  - 'apps/*'
+  - 'libs/*'
