@@ -47,6 +47,16 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
+  settings      UserSettings?
+}
+
+model UserSettings {
+  userId String @unique
+
+  wandbKey String?
+  hfAccessToken String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
