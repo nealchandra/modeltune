@@ -3,28 +3,25 @@
     "default": {
       "runner": "nx/tasks-runners/default",
       "options": {
-        "cacheableOperations": [
-          "build",
-          "lint"
-        ]
+        "cacheableOperations": ["build", "lint"]
       }
     }
   },
   "targetDefaults": {
     "dev": {
       "dependsOn": [
-        "^dev"
+        "^build",
+        {
+          "projects": ["db"],
+          "target": "generate"
+        }
       ]
     },
     "build": {
-      "dependsOn": [
-        "^build"
-      ]
+      "dependsOn": ["^build"]
     },
     "start": {
-      "dependsOn": [
-        "^start"
-      ]
+      "dependsOn": ["^start"]
     }
   },
   "affected": {

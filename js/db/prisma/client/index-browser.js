@@ -136,6 +136,12 @@ exports.Prisma.UserScalarFieldEnum = {
   image: 'image'
 };
 
+exports.Prisma.UserSettingsScalarFieldEnum = {
+  userId: 'userId',
+  wandbKey: 'wandbKey',
+  hfAccessToken: 'hfAccessToken'
+};
+
 exports.Prisma.VerificationTokenScalarFieldEnum = {
   identifier: 'identifier',
   token: 'token',
@@ -162,6 +168,7 @@ exports.Prisma.ModelName = {
   Account: 'Account',
   Session: 'Session',
   User: 'User',
+  UserSettings: 'UserSettings',
   VerificationToken: 'VerificationToken'
 };
 
