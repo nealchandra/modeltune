@@ -1,9 +1,0 @@
-{
-  "extends": "../../tsconfig.root.json",
-  "compilerOptions": {
-    "composite": true,
-    "target": "ES6",
-    "baseUrl": "./src",
-    "outDir": "build"
-  }
-}

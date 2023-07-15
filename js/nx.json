@@ -12,16 +12,13 @@
       "dependsOn": [
         "^build",
         {
-          "projects": ["db"],
+          "projects": ["@js/db"],
           "target": "generate"
         }
       ]
     },
     "build": {
       "dependsOn": ["^build"]
-    },
-    "start": {
-      "dependsOn": ["^start"]
     }
   },
   "affected": {
