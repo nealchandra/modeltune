@@ -143,7 +143,7 @@ class LLM:
         data = load_dataset(dataset_path)
         data = (
             data["train"]
-            .select(range(20000))
+            .select(range(2000))
             .map(lambda row: self.tokenizer(chevron.render(prompt_template, row)))
         )
 
