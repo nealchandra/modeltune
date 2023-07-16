@@ -1,6 +1,7 @@
 import { Shell } from '@app/components/shell';
 import { getCurrentUser } from '@app/lib/session';
 import { UserSettings } from '@prisma/client';
+import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { prisma as db } from '@js/db';
@@ -43,6 +44,8 @@ export default async function SettingsPage() {
       },
       data: changes,
     });
+
+    revalidatePath('/settings');
   };
 
   return (

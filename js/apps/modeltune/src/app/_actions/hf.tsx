@@ -1,29 +1,37 @@
 'use server';
 
+import { getCurrentUserOrThrow } from '@app/lib/session';
+
+import { prisma as db } from '@js/db';
+
+export const getHfHeaders = async () => {
+  const user = await getCurrentUserOrThrow();
+  // seems like ideally there would be a way to cache this lookup for a bit
+  // cache mechanism here doesn't seem possible to invalidate when settings change
+  // https://nextjs.org/docs/app/building-your-application/data-fetching/caching#per-request-caching
+  const settings = await db.userSettings.findFirst({
+    where: {
+      userId: user.id,
+    },
+  });
+
+  return settings
+    ? {
+        Authorization: `Bearer ${settings.hfAccessToken}`,
+      }
+    : undefined;
+};
+
 export const autocompleteDatasets = async (
   txt: string
 ): Promise<
   { id: string; label: string; value: string; private: boolean }[]
 > => {
-  // const x = await fetch(
-  //   'https://huggingface.co/api/quicksearch?q=lt-full&type=all',
-  //   {
-  //     headers: {
-  //       Authorization: `Bearer ${'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'}`,
-  //     },
-  //     method: 'GET',
-  //   }
-  // );
-  // const z = await x.json();
-  // console.log(z);
-
-  // fetch GET from 'https://huggingface.co/api/datasets' with query containing 'search'
+  const headers = await getHfHeaders();
   const response = await fetch(
     `https://huggingface.co/api/datasets?search=${txt}&limit=10`,
     {
-      headers: {
-        Authorization: `Bearer ${'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'}`,
-      },
+      headers,
       method: 'GET',
     }
   );
@@ -37,15 +45,14 @@ export const autocompleteDatasets = async (
 };
 
 export const getDatasetInfo = async (dataset_id: string) => {
+  const headers = await getHfHeaders();
   const response = await fetch(
     `https://datasets-server.huggingface.co/info?dataset=${dataset_id}&config=${dataset_id.replace(
       '/',
       '--'
     )}`,
     {
-      headers: {
-        Authorization: `Bearer ${'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'}`,
-      },
+      headers,
       method: 'GET',
     }
   );
@@ -55,15 +62,14 @@ export const getDatasetInfo = async (dataset_id: string) => {
 };
 
 export const getDatasetRows = async (dataset_id: string) => {
+  const headers = await getHfHeaders();
   const response = await fetch(
     `https://datasets-server.huggingface.co/rows?dataset=${dataset_id}&config=${dataset_id.replace(
       '/',
       '--'
     )}&length=10&split=train`,
     {
-      headers: {
-        Authorization: `Bearer ${'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'}`,
-      },
+      headers,
       method: 'GET',
     }
   );

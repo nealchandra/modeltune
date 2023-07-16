@@ -4,6 +4,8 @@ import * as React from 'react';
 
 import { autocompleteDatasets, getDatasetInfo } from '../../_actions/hf';
 import { BASE_MODELS, BASE_MODEL_NAMES } from '../useModelPlayground';
+import { startFinetune } from '@app/app/_actions/tuning';
+import { Icons } from '@app/components/icons';
 import { Button } from '@app/components/ui/button';
 import {
   Card,
@@ -84,20 +86,12 @@ const formSchema = z.object({
     private: z.boolean(),
   }),
   promptTemplate: z.string().nonempty(),
-  // epochs: z
-  //   .number()
-  //   .min(1, {
-  //     message: 'Must train for at least 1 epoch',
-  //   })
-  //   .max(5, {
-  //     message: 'Maximum training length is 5 epochs',
-  //   }),
-  wandbKey: z.string().nullable(),
   feature: z.string().nonempty({ message: 'Must select a feature' }),
 });
 
 export default function Tune() {
   const [open, setOpen] = React.useState(false);
+  const [loading, setLoading] = React.useState<boolean>(false);
   const [datasets, setDatasets] = React.useState<
     Array<{ id: string; value: string; label: string; private: boolean }>
   >([]);
@@ -110,11 +104,9 @@ export default function Tune() {
     defaultValues: {
       name: '',
       baseModel: BASE_MODELS.FALCON,
-      // epochs: 1,
       promptTemplate: '',
       feature: '',
       dataset: undefined,
-      wandbKey: null,
     },
   });
   const datasetWatch = form.watch('dataset');
@@ -123,25 +115,15 @@ export default function Tune() {
   const isPrivateDataset = form.watch('dataset.private');
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    setLoading(true);
+    await startFinetune({
+      modelName: values.name,
+      baseModel: values.baseModel,
+      datasetRepoId: values.dataset.id,
+      promptTemplate: values.promptTemplate,
+    });
+    setLoading(false);
     setSubmissionData(values);
-
-    const response = await fetch(
-      `https://nealcorp--gpt-service-web.modal.run/train`,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          model_name: values.name,
-          base_model_repo_id: values.baseModel,
-          dataset_repo_id: values.dataset.id,
-          prompt_template: values.promptTemplate,
-          wandb_key: values.wandbKey,
-        }),
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
-
-    const result = await response.json();
-    return result;
   }
 
   React.useEffect(() => {
@@ -392,40 +374,10 @@ export default function Tune() {
               )}
             />
           ) : null}
-          {/* <FormField
-          control={form.control}
-          name="epochs"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Epochs</FormLabel>
-              <FormControl>
-                <Input type="number" placeholder="3" {...field} />
-              </FormControl>
-              <FormDescription>How many epochs to train for</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        /> */}
-          <FormField
-            control={form.control}
-            name="wandbKey"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>wandb API Key</FormLabel>
-                <FormControl>
-                  <Input
-                    type="text"
-                    placeholder="abc-123"
-                    {...field}
-                    value={field.value ?? ''}
-                  />
-                </FormControl>
-                <FormDescription>Weights and Biases API Key</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button type="submit">Submit</Button>
+          <Button type="submit">
+            {loading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
+            Submit
+          </Button>
         </form>
       </Form>
       <DatasetPreview

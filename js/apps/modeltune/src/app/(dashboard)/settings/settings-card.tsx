@@ -20,6 +20,7 @@ export const SettingsCard: React.FC<{
   updateUserSettings: (settings: UserSettings) => void;
 }> = ({ settings, updateUserSettings }) => {
   const { toast } = useToast();
+  const [isPending, startTransition] = React.useTransition();
   const [loading, setLoading] = React.useState<boolean>(false);
   const [showPwd, setShowPwd] = React.useState<string | null>(null);
 
@@ -64,11 +65,13 @@ export const SettingsCard: React.FC<{
         </Label>
         <Button
           onClick={async () => {
-            setLoading(true);
-            await updateUserSettings(userSettings);
-            setLoading(false);
-            toast({
-              description: 'Your settings were updated.',
+            startTransition(async () => {
+              setLoading(true);
+              await updateUserSettings(userSettings);
+              setLoading(false);
+              toast({
+                description: 'Your settings were updated.',
+              });
             });
           }}
         >

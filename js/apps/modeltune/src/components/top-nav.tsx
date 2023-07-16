@@ -40,7 +40,10 @@ export function TopNav({ items, user, children }: TopNavProps) {
   return (
     <div className="flex justify-between w-full gap-6 md:gap-10">
       <div className="flex space-x-4">
-        <Link href="/" className="hidden items-center space-x-2 md:flex">
+        <Link
+          href={user ? '/playground' : '/'}
+          className="hidden items-center space-x-2 md:flex"
+        >
           <Icons.logo />
           <span className="hidden font-bold sm:inline-block">Modeltune</span>
         </Link>
