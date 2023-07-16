@@ -29,17 +29,13 @@ export default async function SettingsPage() {
     'use server';
 
     const changes = {
-      ...(settings.userSettings.hfAccessToken != null &&
-      settings.userSettings.hfAccessToken != ''
-        ? { hfAccessToken: settings.userSettings.hfAccessToken }
+      ...(settings.hfAccessToken != null && settings.hfAccessToken != ''
+        ? { hfAccessToken: settings.hfAccessToken }
         : {}),
-      ...(settings.userSettings.wandbKey != null &&
-      settings.userSettings.wandbKey != ''
-        ? { wandbKey: settings.userSettings.wandbKey }
+      ...(settings.wandbKey != null && settings.wandbKey != ''
+        ? { wandbKey: settings.wandbKey }
         : {}),
     };
-
-    console.log(changes);
 
     await db.userSettings.update({
       where: {

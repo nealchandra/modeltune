@@ -91,11 +91,9 @@ export function TopNav({ items, user, children }: TopNavProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem disabled>Profile</DropdownMenuItem>
-              <DropdownMenuItem disabled>Settings</DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/settings">Settings</Link>
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => signOut()}>
               Log out
             </DropdownMenuItem>

@@ -1,3 +1,4 @@
+import { Toaster } from '@app/components/ui/toaster';
 import { cn } from '@app/lib/utils';
 import { Inter } from 'next/font/google';
 
@@ -30,7 +31,10 @@ export default function RootLayout({
           // fontHeading.variable
         )}
       >
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <Toaster />
+        </Providers>
       </body>
     </html>
   );
