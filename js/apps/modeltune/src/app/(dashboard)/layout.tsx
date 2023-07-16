@@ -1,5 +1,6 @@
 import { SiteFooter } from '@app/components/footer';
 import { TopNav } from '@app/components/top-nav';
+import { Toaster } from '@app/components/ui/toaster';
 import { getCurrentUser } from '@app/lib/session';
 
 interface DashboardLayoutProps {

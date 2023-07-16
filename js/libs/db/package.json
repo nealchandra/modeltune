@@ -8,6 +8,7 @@
     "prisma": "4.16.2"
   },
   "scripts": {
+    "reset": "prisma migrate reset -f",
     "migrate": "prisma migrate dev",
     "migrate-deploy": "prisma migrate deploy",
     "generate": "prisma generate",
