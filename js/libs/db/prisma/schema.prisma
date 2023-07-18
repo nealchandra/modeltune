@@ -1,31 +1,28 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
-  directUrl = env("DIRECT_DATABASE_URL")
-
+generator client {
+  provider = "prisma-client-js"
 }
 
-generator client {
-  provider        = "prisma-client-js"
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
+  id                       String  @id @default(cuid())
+  userId                   String
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String?
   refresh_token_expires_in Int?
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  access_token             String?
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String?
+  session_state            String?
+  user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -44,18 +41,19 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  accounts      Account[]
-  sessions      Session[]
-  settings      UserSettings?
+
+  accounts Account[]
+  sessions Session[]
+  settings UserSettings?
+
+  models Model[]
 }
 
 model UserSettings {
-  userId String @unique
-
-  wandbKey String?
+  userId        String  @unique
+  wandbKey      String?
   hfAccessToken String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
@@ -64,4 +62,57 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+enum TrainingJobTypes {
+  FINETUNE
+}
+
+model TrainingJob {
+  id   String           @id @default(cuid())
+  type TrainingJobTypes
+
+  createdAt   DateTime  @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  parameters Json @default("{}")
+}
+
+enum ModelTypes {
+  PRETRAINED
+  ADAPTER
+}
+
+enum VisibilityTypes {
+  PUBLIC
+  PRIVATE
+}
+
+model Model {
+  id   String     @id @default(cuid())
+  type ModelTypes
+
+  readyForInference Boolean @default(false)
+
+  ownerId String? @unique
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  baseModelId String? @unique
+  baseModel   Model?  @relation("BaseModelAdapters", fields: [baseModelId], references: [id])
+  adapters    Model[] @relation("BaseModelAdapters")
+
+  hfDatasetId String?
+  prompt      PromptConfig @relation(fields: [id], references: [modelId])
+
+  visibility VisibilityTypes @default(PRIVATE)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @default(now())
+}
+
+model PromptConfig {
+  modelId  String @unique
+  template String
+
+  Model Model[]
 }

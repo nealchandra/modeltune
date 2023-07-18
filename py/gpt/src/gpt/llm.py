@@ -34,7 +34,12 @@ from transformers import (
     PreTrainedModel,
     PreTrainedTokenizer,
     TextIteratorStreamer,
+    TrainerCallback,
+    TrainerControl,
+    TrainerState,
+    TrainingArguments,
 )
+from transformers.integrations import WandbCallback
 
 from . import utils
 
@@ -65,6 +70,18 @@ class GenerationArgs(TypedDict):
 class TrainerArgs(TypedDict):
     report_to_wandb: bool
 
+
+class LLMTrainerCallback(TrainerCallback):
+    def on_log(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, logs=None, **kwargs):
+        print('neal test')
+        print(logs)
+        return super().on_log(args, state, control, **kwargs)
+
+# class CustomWandBCallback(WandbCallback):
+#     def on_train_begin(self, args, state, control, model=None, **kwargs):
+#         x = super().on_train_begin(args, state, control, model, **kwargs)
+#         print(x._wandb)
+#         return x
 
 class LLM:
     model_type: Union[Literal["Llama"], Literal["Falcon"]]
@@ -143,7 +160,7 @@ class LLM:
         data = load_dataset(dataset_path)
         data = (
             data["train"]
-            .select(range(2000))
+            .select(range(20))
             .map(lambda row: self.tokenizer(chevron.render(prompt_template, row)))
         )
 
@@ -166,6 +183,7 @@ class LLM:
                 report_to="wandb" if train_args["report_to_wandb"] else "none",
                 run_name=f"{output_dir.split('/')[-1]}",
             ),
+            callbacks=[LLMTrainerCallback],
             data_collator=DataCollatorForLanguageModeling(self.tokenizer, mlm=False),
         )
         trainer.train()

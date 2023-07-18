@@ -19,7 +19,7 @@ from .download import download_model
         "/finetunes": finetunes_volume,
     },
     concurrency_limit=1,
-    container_idle_timeout=300,
+    container_idle_timeout=180,
     timeout=60 * 60 * 24,  # training takes a long time
 )
 class Inference(ClsMixin):
