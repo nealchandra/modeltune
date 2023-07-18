@@ -46,7 +46,8 @@ model User {
   sessions Session[]
   settings UserSettings?
 
-  models Model[]
+  trainingJobs TrainingJob[]
+  models       Model[]
 }
 
 model UserSettings {
@@ -68,15 +69,64 @@ enum TrainingJobTypes {
   FINETUNE
 }
 
+enum TrainingJobStatus {
+  STARTED
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
 model TrainingJob {
-  id   String           @id @default(cuid())
-  type TrainingJobTypes
+  id     String            @id @default(cuid())
+  type   TrainingJobTypes
+  status TrainingJobStatus @default(STARTED)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  steps TrainingJobStep[]
+  logs  TrainingJobLog[]
 
   createdAt   DateTime  @default(now())
-  startedAt   DateTime?
   completedAt DateTime?
 
+  /// Type 
   parameters Json @default("{}")
+  data       Json @default("{}")
+}
+
+enum TrainingJobStepTypes {
+  JOB_STARTED
+  JOB_FAILED
+  JOB_COMPLETED
+  JOB_CANCELLED
+
+  PREPARING_DATASET
+  TRAINING_STARTED
+  EPOCH_COMPLETED
+}
+
+model TrainingJobStep {
+  id   String               @id @default(cuid())
+  type TrainingJobStepTypes
+
+  trainingJobId String
+  trainingJob   TrainingJob @relation(fields: [trainingJobId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  data Json @default("{}")
+}
+
+model TrainingJobLog {
+  id String @id @default(cuid())
+
+  trainingJobId String
+  trainingJob   TrainingJob @relation(fields: [trainingJobId], references: [id], onDelete: Cascade)
+
+  content String @default("")
+
+  createdAt DateTime @default(now())
 }
 
 enum ModelTypes {
@@ -95,10 +145,10 @@ model Model {
 
   readyForInference Boolean @default(false)
 
-  ownerId String? @unique
+  ownerId String?
   owner   User?   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
-  baseModelId String? @unique
+  baseModelId String?
   baseModel   Model?  @relation("BaseModelAdapters", fields: [baseModelId], references: [id])
   adapters    Model[] @relation("BaseModelAdapters")
 

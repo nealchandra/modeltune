@@ -1,5 +1,5 @@
 import { Shell } from '@app/components/shell';
-import { getCurrentUser } from '@app/lib/session';
+import { getCurrentUserOrThrow } from '@app/lib/session';
 import { UserSettings } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -9,11 +9,7 @@ import { prisma as db } from '@js/db';
 import { SettingsCard } from './settings-card';
 
 export default async function SettingsPage() {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect('/login');
-  }
+  const user = await getCurrentUserOrThrow();
 
   const userSettings = await db.userSettings.upsert({
     where: { userId: user.id },
@@ -25,7 +21,6 @@ export default async function SettingsPage() {
     },
   });
 
-  // NOTE: decide whether to move this into actions folder, could also use zod validation
   const updateUserSettings = async (settings: UserSettings) => {
     'use server';
 
