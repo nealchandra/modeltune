@@ -6,8 +6,6 @@ import { redirect } from 'next/navigation';
 
 import { prisma as db } from '@js/db';
 
-import { SettingsCard } from './settings-card';
-
 export default async function JobsPage() {
   const user = await getCurrentUserOrThrow();
 
