@@ -26,17 +26,32 @@ export default async function JobsDetailPage({
     notFound();
   }
 
+  const fetchTrainingJob = async () => {
+    'use server';
+
+    return await db.trainingJob.findUnique({
+      where: {
+        id: params.jobId,
+      },
+      include: {
+        logs: true,
+        steps: true,
+      },
+    });
+  };
+
   return (
     <Shell>
-      <div className="grid grid-cols-2">
+      <div className="grid grid-cols-3">
         <div className="col-start-1 col-end-2">
           <h2 className="text-3xl font-bold tracking-tight">Job Details</h2>
           <Label>
-            <strong>ID:</strong> clk7zuyhf0001h7exqjmr12wv
+            <strong>ID:</strong>
+            {trainingJob.id}
           </Label>
         </div>
-        <div>
-          <TrainingInfo />
+        <div className="col-span-2">
+          <TrainingInfo fetchTrainingJob={fetchTrainingJob} />
         </div>
       </div>
     </Shell>

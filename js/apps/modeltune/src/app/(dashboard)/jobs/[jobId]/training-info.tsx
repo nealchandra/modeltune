@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@app/components/ui/card';
+import { Skeleton } from '@app/components/ui/skeleton';
 import {
   Tabs,
   TabsContent,
@@ -22,15 +23,27 @@ import {
   TimelineTime,
   TimelineTitle,
 } from '@app/components/ui/timeline';
+import {
+  Prisma,
+  TrainingJob,
+  TrainingJobLog,
+  TrainingJobStatus,
+  TrainingJobStep,
+} from '@prisma/client';
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
-export const TrainingInfo: React.FC<{}> = ({}) => {
-  const [timelineItems, setTimelineItems] = React.useState([
-    {
-      title: 'Job Started',
-      time: '10:30:52',
-      description: 'Created run on Weights & Biases',
-    },
-  ]);
+const TrainingLogs: React.FC<{
+  steps: TrainingJobStep[];
+  logs: TrainingJobLog[];
+}> = ({ steps, logs }) => {
+  console.log(steps);
 
   return (
     <Tabs defaultValue="timeline">
@@ -48,7 +61,7 @@ export const TrainingInfo: React.FC<{}> = ({}) => {
           </CardHeader>
           <CardContent className="space-y-2">
             <Timeline>
-              <TimelineItem>
+              {/* <TimelineItem>
                 <TimelineTime>10:30:52 </TimelineTime>
                 <TimelineTitle>Job Started</TimelineTitle>
               </TimelineItem>
@@ -79,7 +92,7 @@ export const TrainingInfo: React.FC<{}> = ({}) => {
                     />
                   </svg>
                 </a>
-              </TimelineItem>
+              </TimelineItem> */}
             </Timeline>
           </CardContent>
         </Card>
@@ -88,23 +101,136 @@ export const TrainingInfo: React.FC<{}> = ({}) => {
         <Card>
           <CardContent className="space-y-2">
             <pre className="break-words whitespace-pre-wrap">
-              <p>{`neal test
-{'loss': 0.1248, 'learning_rate': 0.00015, 'epoch': 1.0}
-{'loss': 0.1248, 'learning_rate': 0.00015, 'epoch': 1.0}
-100%|██████████| 2/2 [00:05&lt;00:00,  2.76s/it]
-neal test
-{'loss': 0.1237, 'learning_rate': 0.0, 'epoch': 2.0}
-                                             
-{'loss': 0.1237, 'learning_rate': 0.0, 'epoch': 2.0}
-100%|██████████| 2/2 [00:05&lt;00:00,  2.76s/it]
-neal test
-{'train_runtime': 5.8964, 'train_samples_per_second': 6.784, 'train_steps_per_second': 0.339, 'total_flos': 29204113714176.0, 'train_loss': 0.1242656521499157, 'epoch': 2.0}
-                                             
-{'train_runtime': 5.8964, 'train_`}</p>
+              {logs.map((log) => (
+                <p>
+                  <strong>{log.createdAt.toTimeString()}</strong>
+                  {log.content}
+                </p>
+              ))}
             </pre>
           </CardContent>
         </Card>
       </TabsContent>
     </Tabs>
+  );
+};
+
+export const TrainingChart: React.FC<
+  React.PropsWithChildren<{
+    job: TrainingJob;
+  }>
+> = ({ job }) => (
+  <ResponsiveContainer width="100%" maxHeight={500}>
+    <LineChart
+      data={[
+        {
+          name: 'Page A',
+          uv: 4000,
+          pv: 2400,
+          amt: 2400,
+        },
+        {
+          name: 'Page B',
+          uv: 3000,
+          pv: 1398,
+          amt: 2210,
+        },
+        {
+          name: 'Page C',
+          uv: 2000,
+          pv: 9800,
+          amt: 2290,
+        },
+        {
+          name: 'Page D',
+          uv: 2780,
+          pv: 3908,
+          amt: 2000,
+        },
+        {
+          name: 'Page E',
+          uv: 1890,
+          pv: 4800,
+          amt: 2181,
+        },
+        {
+          name: 'Page F',
+          uv: 2390,
+          pv: 3800,
+          amt: 2500,
+        },
+        {
+          name: 'Page G',
+          uv: 3490,
+          pv: 4300,
+          amt: 2100,
+        },
+      ]}
+    >
+      <XAxis dataKey="name" />
+      <YAxis />
+      <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
+      <Line type="monotone" dataKey="uv" stroke="#8884d8" />
+    </LineChart>
+  </ResponsiveContainer>
+);
+
+type FullTrainingJob = Prisma.TrainingJobGetPayload<{
+  include: { logs: true; steps: true };
+}>;
+
+export const TrainingInfo: React.FC<
+  React.PropsWithChildren<{
+    fetchTrainingJob: () => Promise<FullTrainingJob>;
+  }>
+> = ({ fetchTrainingJob }) => {
+  const [trainingJob, setTrainingJob] = React.useState<FullTrainingJob>();
+  const [isVisible, setIsVisible] = React.useState(true);
+  const onVisibilityChange = () => setIsVisible(!document.hidden);
+
+  React.useEffect(() => {
+    document.addEventListener('visibilitychange', onVisibilityChange, false);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  });
+
+  const updateTrainingJob = async () => {
+    const job = await fetchTrainingJob();
+    setTrainingJob(job);
+  };
+
+  React.useEffect(() => {
+    updateTrainingJob();
+
+    const interval = setInterval(async () => {
+      if (
+        isVisible &&
+        trainingJob?.status !== TrainingJobStatus.COMPLETED &&
+        trainingJob?.status !== TrainingJobStatus.FAILED
+      ) {
+        updateTrainingJob();
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!trainingJob) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-full" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <TrainingChart job={trainingJob} />
+      <TrainingLogs steps={trainingJob.steps} logs={trainingJob.logs} />
+    </>
   );
 };
