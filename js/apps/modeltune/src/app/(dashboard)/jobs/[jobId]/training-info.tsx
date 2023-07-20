@@ -217,7 +217,7 @@ export const TrainingChart: React.FC<
   </ResponsiveContainer>
 );
 
-type FullTrainingJob = Prisma.TrainingJobGetPayload<{
+export type FullTrainingJob = Prisma.TrainingJobGetPayload<{
   include: { logs: true; steps: true };
 }>;
 
@@ -256,7 +256,7 @@ export const TrainingInfo: React.FC<
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, [isVisble, trainingJob?.status]);
+  }, [isVisible, trainingJob?.status]);
 
   if (!trainingJob) {
     return (

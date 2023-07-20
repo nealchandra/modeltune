@@ -8,7 +8,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { prisma as db } from '@js/db';
 
-import { TrainingInfo } from './training-info';
+import { FullTrainingJob, TrainingInfo } from './training-info';
 
 export default async function JobsDetailPage({
   params,
@@ -29,7 +29,7 @@ export default async function JobsDetailPage({
   const fetchTrainingJob = async () => {
     'use server';
 
-    return await db.trainingJob.findUnique({
+    return (await db.trainingJob.findUnique({
       where: {
         id: params.jobId,
       },
@@ -37,7 +37,7 @@ export default async function JobsDetailPage({
         logs: true,
         steps: true,
       },
-    });
+    })) as FullTrainingJob;
   };
 
   return (
