@@ -75,9 +75,9 @@ export const startTrainingJob = inngest.createFunction(
       throw new Error(`Non finetune jobs not implemented`);
     }
 
-    await step.run('Initiate remote training job', async () => {
-      return await startFinetune(job.user, job);
-    });
+    // await step.run('Initiate remote training job', async () => {
+    //   return await startFinetune(job.user, job);
+    // });
 
     // Wait for job to finish
     // @ts-ignore
@@ -154,21 +154,22 @@ export const failTrainingJob = inngest.createFunction(
 );
 
 export const createTrainingStep = inngest.createFunction(
-  { name: 'Training Step Created' },
+  { name: 'Training step created' },
   { event: 'training/step.create' },
   async ({ event, step }) => {
+    console.log('creating training step');
     await db.trainingJobStep.create({
       data: {
         trainingJobId: event.data.jobId,
-        type: TrainingJobStepTypes.JOB_COMPLETED,
-        ...(event.data.payload ? { payload: event.data.payload } : {}),
+        type: event.data.stepType,
+        ...(event.data.payload ? { data: event.data.payload as any } : {}),
       },
     });
   }
 );
 
 export const createTrainingLog = inngest.createFunction(
-  { name: 'Training Log Created' },
+  { name: 'Training log created' },
   { event: 'training/log.create' },
   async ({ event, step }) => {
     await db.trainingJobLog.create({

@@ -39,12 +39,83 @@ import {
   YAxis,
 } from 'recharts';
 
+const TimelineStep: React.FC<
+  React.PropsWithChildren<{ step: TrainingJobStep }>
+> = ({ step }) => {
+  const renderData = (step: TrainingJobStep) => {
+    switch (step.type) {
+      case 'JOB_STARTED':
+        return (
+          <>
+            <TimelineTitle>Job started</TimelineTitle>
+            <TimelineDescription>
+              Job is in queue for training
+            </TimelineDescription>
+          </>
+        );
+      case 'JOB_FAILED':
+        return (
+          <>
+            <TimelineTitle>Job failed</TimelineTitle>
+            <TimelineDescription>Job has failed</TimelineDescription>
+          </>
+        );
+      case 'JOB_CANCELLED':
+        return (
+          <>
+            <TimelineTitle>Job cancelled</TimelineTitle>
+            <TimelineDescription>Job was cancelled.</TimelineDescription>
+          </>
+        );
+      case 'JOB_COMPLETED':
+        return (
+          <>
+            <TimelineTitle>Job completed</TimelineTitle>
+            <TimelineDescription>Job has completed.</TimelineDescription>
+          </>
+        );
+      case 'PREPARING_DATASET':
+        return (
+          <>
+            <TimelineTitle>Preparing dataset</TimelineTitle>
+            <TimelineDescription>
+              Preparing dataset for training
+            </TimelineDescription>
+          </>
+        );
+      case 'TRAINING_STARTED':
+        return (
+          <>
+            <TimelineTitle>Training started</TimelineTitle>
+            <TimelineDescription>Training has started</TimelineDescription>
+          </>
+        );
+      case 'EPOCH_COMPLETED':
+        return (
+          <>
+            <TimelineTitle>Epoch completed</TimelineTitle>
+            <TimelineDescription>
+              Epoch of training completed
+            </TimelineDescription>
+          </>
+        );
+      default:
+        return <TimelineTitle>Job updated</TimelineTitle>;
+    }
+  };
+
+  return (
+    <TimelineItem>
+      <TimelineTime>{step.createdAt.toTimeString()}</TimelineTime>
+      {renderData(step)}
+    </TimelineItem>
+  );
+};
+
 const TrainingLogs: React.FC<{
   steps: TrainingJobStep[];
   logs: TrainingJobLog[];
 }> = ({ steps, logs }) => {
-  console.log(steps);
-
   return (
     <Tabs defaultValue="timeline">
       <TabsList className="grid w-full grid-cols-2">
@@ -61,38 +132,9 @@ const TrainingLogs: React.FC<{
           </CardHeader>
           <CardContent className="space-y-2">
             <Timeline>
-              {/* <TimelineItem>
-                <TimelineTime>10:30:52 </TimelineTime>
-                <TimelineTitle>Job Started</TimelineTitle>
-              </TimelineItem>
-              <TimelineItem>
-                <TimelineTime>10:30:52 </TimelineTime>
-                <TimelineTitle>W&B: Run Created</TimelineTitle>
-                <TimelineDescription>
-                  Created run on Weights & Biases
-                </TimelineDescription>
-                <a
-                  href="#"
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:outline-none focus:ring-gray-200 focus:text-blue-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-gray-700"
-                >
-                  Learn more{' '}
-                  <svg
-                    className="w-3 h-3 ml-2"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 14 10"
-                  >
-                    <path
-                      stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M1 5h12m0 0L9 1m4 4L9 9"
-                    />
-                  </svg>
-                </a>
-              </TimelineItem> */}
+              {steps.map((step) => (
+                <TimelineStep key={step.id} step={step} />
+              ))}
             </Timeline>
           </CardContent>
         </Card>
@@ -102,7 +144,7 @@ const TrainingLogs: React.FC<{
           <CardContent className="space-y-2">
             <pre className="break-words whitespace-pre-wrap">
               {logs.map((log) => (
-                <p>
+                <p key={log.id}>
                   <strong>{log.createdAt.toTimeString()}</strong>
                   {log.content}
                 </p>
@@ -214,7 +256,7 @@ export const TrainingInfo: React.FC<
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isVisble, trainingJob?.status]);
 
   if (!trainingJob) {
     return (
