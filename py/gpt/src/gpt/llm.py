@@ -42,7 +42,7 @@ from transformers import (
 from transformers.integrations import WandbCallback
 
 from . import utils
-from .reporter import LLMTrainerCallback, TrainingJobStep
+from .reporter import CustomWandBCallback, LLMTrainerCallback, TrainingJobStep
 
 MICRO_BATCH_SIZE = 4  # this could actually be 5 but i like powers of 2
 BATCH_SIZE = 256
@@ -126,7 +126,7 @@ class LLM:
         output_dir,
         *,
         on_log: Callable[[str], None] = None,
-        on_step: Callable[[TrainingJobStep], None] = None,
+        on_step: Callable[[TrainingJobStep, dict], None] = None,
         train_args: Optional[TrainerArgs] = None,
     ):
         self.model.train()
@@ -160,9 +160,17 @@ class LLM:
 
         self.tokenizer.pad_token = self.tokenizer.eos_token
 
-        reporter = LLMTrainerCallback(on_log=on_log, on_step=on_step)
+        callbacks = [LLMTrainerCallback(on_log=on_log, on_step=on_step)]
+        if train_args["report_to_wandb"]:
+            callbacks.append(
+                CustomWandBCallback(
+                    on_init=lambda url: on_step(
+                        TrainingJobStep.PREPARING_DATASET,
+                        {"wandb_url": url},
+                    )
+                )
+            )
 
-        os.environ["WANDB_PROJECT"] = "modeltune"
         trainer = transformers.Trainer(
             model=model,
             train_dataset=data,
@@ -176,10 +184,9 @@ class LLM:
                 logging_steps=1,
                 output_dir=output_dir,
                 save_total_limit=2,
-                report_to="wandb" if train_args["report_to_wandb"] else "none",
                 run_name=f"{output_dir.split('/')[-1]}",
             ),
-            callbacks=[reporter],
+            callbacks=callbacks,
             data_collator=DataCollatorForLanguageModeling(self.tokenizer, mlm=False),
         )
         trainer.train()

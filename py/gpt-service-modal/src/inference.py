@@ -14,7 +14,10 @@ from .inngest import Inngest
     cloud="gcp",
     gpu="A100",
     image=stub.inference_image,
-    secret=modal.Secret.from_name("hf-secret"),
+    secrets=[
+        modal.Secret.from_name("hf-secret"),
+        modal.Secret.from_name("inngest-dev"),
+    ],
     shared_volumes={
         "/models": models_volume,
         "/finetunes": finetunes_volume,

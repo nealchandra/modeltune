@@ -43,6 +43,7 @@ const TimelineStep: React.FC<
   React.PropsWithChildren<{ step: TrainingJobStep }>
 > = ({ step }) => {
   const renderData = (step: TrainingJobStep) => {
+    console.log(step);
     switch (step.type) {
       case 'JOB_STARTED':
         return (
