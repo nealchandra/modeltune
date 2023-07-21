@@ -25,14 +25,14 @@ def train_finetune(
     dataset_repo_id: str,
     prompt_template: str,
     model_name: str,
-    wanb_key: Optional[str],
+    job_data: dict,
 ):
     remote = Inference.remote(base_model_repo_id)
     remote.train.call(
         dataset_repo_id,
         prompt_template,
         f"{base_model_repo_id.replace('/', '--')}/{model_name}",
-        wanb_key,
+        job_data,
     )
 
 
@@ -80,6 +80,8 @@ def web():
         dataset_repo_id: str
         prompt_template: str
         model_name: str
+        job_id: str
+        env: Optional[str]
         wandb_key: Optional[str]
 
     @web_app.post("/generate")
@@ -117,7 +119,7 @@ def web():
             body.dataset_repo_id,
             body.prompt_template,
             body.model_name,
-            body.wandb_key,
+            {"job_id": body.job_id, "env": body.env, "wandb_key": body.wandb_key},
         )
 
         return {"status": "ok"}

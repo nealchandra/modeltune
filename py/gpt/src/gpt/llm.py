@@ -1,7 +1,7 @@
 import os
 import time
 from threading import Thread
-from typing import Literal, Optional, TypedDict, Union
+from typing import Callable, Literal, Optional, TypedDict, Union
 
 import chevron
 import torch
@@ -42,6 +42,7 @@ from transformers import (
 from transformers.integrations import WandbCallback
 
 from . import utils
+from .reporter import LLMTrainerCallback, TrainingJobStep
 
 MICRO_BATCH_SIZE = 4  # this could actually be 5 but i like powers of 2
 BATCH_SIZE = 256
@@ -70,18 +71,6 @@ class GenerationArgs(TypedDict):
 class TrainerArgs(TypedDict):
     report_to_wandb: bool
 
-
-class LLMTrainerCallback(TrainerCallback):
-    def on_log(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, logs=None, **kwargs):
-        print('neal test')
-        print(logs)
-        return super().on_log(args, state, control, **kwargs)
-
-# class CustomWandBCallback(WandbCallback):
-#     def on_train_begin(self, args, state, control, model=None, **kwargs):
-#         x = super().on_train_begin(args, state, control, model, **kwargs)
-#         print(x._wandb)
-#         return x
 
 class LLM:
     model_type: Union[Literal["Llama"], Literal["Falcon"]]
@@ -135,6 +124,9 @@ class LLM:
         dataset_path,
         prompt_template,
         output_dir,
+        *,
+        on_log: Callable[[str], None] = None,
+        on_step: Callable[[TrainingJobStep], None] = None,
         train_args: Optional[TrainerArgs] = None,
     ):
         self.model.train()
@@ -157,6 +149,8 @@ class LLM:
         )
         model = get_peft_model(self.model, config)
 
+        on_step(TrainingJobStep.PREPARING_DATASET)
+
         data = load_dataset(dataset_path)
         data = (
             data["train"]
@@ -165,6 +159,8 @@ class LLM:
         )
 
         self.tokenizer.pad_token = self.tokenizer.eos_token
+
+        reporter = LLMTrainerCallback(on_log=on_log, on_step=on_step)
 
         os.environ["WANDB_PROJECT"] = "modeltune"
         trainer = transformers.Trainer(
@@ -183,7 +179,7 @@ class LLM:
                 report_to="wandb" if train_args["report_to_wandb"] else "none",
                 run_name=f"{output_dir.split('/')[-1]}",
             ),
-            callbacks=[LLMTrainerCallback],
+            callbacks=[reporter],
             data_collator=DataCollatorForLanguageModeling(self.tokenizer, mlm=False),
         )
         trainer.train()

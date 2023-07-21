@@ -22,7 +22,11 @@ export const startFinetune = async (
       base_model_repo_id: paramters.baseModel,
       dataset_repo_id: paramters.datasetRepoId,
       prompt_template: paramters.promptTemplate,
+      job_id: job.id,
       wandb_key: user.settings?.wandbKey ?? null,
+      ...(process.env.VERCEL_ENV === 'preview'
+        ? { env: process.env.VERCEL_GIT_COMMIT_REF }
+        : {}),
     }),
     headers: { 'Content-Type': 'application/json' },
   });

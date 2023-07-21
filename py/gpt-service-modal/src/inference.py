@@ -7,6 +7,7 @@ from modal.cls import ClsMixin
 
 from .common import finetunes_volume, models_volume, stub
 from .download import download_model
+from .inngest import Inngest
 
 
 @stub.cls(
@@ -49,9 +50,11 @@ class Inference(ClsMixin):
         dataset_repo_id: str,
         prompt_template: str,
         output_name: str,
-        wandb_key: Optional[str] = None,
+        job_data,
     ):
         import wandb
+
+        wandb_key = job_data.get("wandb_key", None)
 
         dataset_path = f"/models/datasets/{dataset_repo_id.replace('/', '--')}"
         if not os.path.exists(dataset_path):
@@ -65,11 +68,15 @@ class Inference(ClsMixin):
         if wandb_key:
             wandb.login(key=wandb_key)
 
+        inngest = Inngest(job_data["job_id"], job_data["env"])
+
         self.llm.train(
             dataset_path,
             prompt_template,
             f"/finetunes/{output_name}",
-            {"report_to_wandb": wandb_key is not None},
+            on_log=lambda l: inngest.post_log(l),
+            on_step=lambda s: inngest.post_step(s),
+            train_args={"report_to_wandb": wandb_key is not None},
         )
 
     @modal.method(is_generator=True)
