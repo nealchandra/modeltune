@@ -71,7 +71,7 @@ class LLMTrainerCallback(TrainerCallback):
         control: TrainerControl,
         **kwargs,
     ):
-        self._on_step and self._on_step(TrainingJobStep.TRAINING_STARTED)
+        self._on_step and self._on_step(TrainingJobStep.EPOCH_COMPLETED)
         return super().on_epoch_end(args, state, control, **kwargs)
 
     def on_log(

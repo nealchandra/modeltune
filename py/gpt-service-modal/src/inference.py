@@ -78,7 +78,7 @@ class Inference(ClsMixin):
             prompt_template,
             f"/finetunes/{output_name}",
             on_log=lambda l: inngest.post_log(l),
-            on_step=lambda s: inngest.post_step(s),
+            on_step=lambda s, d=None: inngest.post_step(s, d),
             train_args={"report_to_wandb": wandb_key is not None},
         )
 
