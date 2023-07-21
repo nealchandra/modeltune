@@ -54,28 +54,28 @@ export const startTrainingJob = inngest.createFunction(
   { name: 'Training job started' },
   { event: 'training/job.start' },
   async ({ event, step }) => {
-    const job = await db.trainingJob.findUnique({
-      where: {
-        id: event.data.jobId,
-      },
-      include: {
-        user: {
-          include: {
-            settings: true,
+    await step.run('Initiate remote training job', async () => {
+      const job = await db.trainingJob.findUnique({
+        where: {
+          id: event.data.jobId,
+        },
+        include: {
+          user: {
+            include: {
+              settings: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    if (!job) {
-      throw new Error(`Job ${event.data.jobId} not found`);
-    }
+      if (!job) {
+        throw new Error(`Job ${event.data.jobId} not found`);
+      }
 
-    if (job.type !== TrainingJobTypes.FINETUNE) {
-      throw new Error(`Non finetune jobs not implemented`);
-    }
+      if (job.type !== TrainingJobTypes.FINETUNE) {
+        throw new Error(`Non finetune jobs not implemented`);
+      }
 
-    await step.run('Initiate remote training job', async () => {
       return await startFinetune(job.user, job);
     });
 
