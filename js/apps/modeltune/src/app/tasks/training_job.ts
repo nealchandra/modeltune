@@ -157,7 +157,6 @@ export const createTrainingStep = inngest.createFunction(
   { name: 'Training step created' },
   { event: 'training/step.create' },
   async ({ event, step }) => {
-    console.log('creating training step');
     await db.trainingJobStep.create({
       data: {
         trainingJobId: event.data.jobId,
