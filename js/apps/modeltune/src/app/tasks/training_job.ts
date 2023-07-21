@@ -75,9 +75,9 @@ export const startTrainingJob = inngest.createFunction(
       throw new Error(`Non finetune jobs not implemented`);
     }
 
-    // await step.run('Initiate remote training job', async () => {
-    //   return await startFinetune(job.user, job);
-    // });
+    await step.run('Initiate remote training job', async () => {
+      return await startFinetune(job.user, job);
+    });
 
     // Wait for job to finish
     // @ts-ignore
