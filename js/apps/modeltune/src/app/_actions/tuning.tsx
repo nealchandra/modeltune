@@ -26,6 +26,14 @@ export const startFinetune = async (payload: Object) => {
     },
   });
 
+  // start job
+  inngest.send({
+    name: 'training/job.start',
+    data: {
+      jobId: trainingJob.id,
+    },
+  });
+
   // trigger job started step
   inngest.send({
     name: 'training/step.create',
