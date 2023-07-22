@@ -15,5 +15,8 @@
       "source.organizeImports": true
     }
   },
+  "[prisma]": {
+    "editor.defaultFormatter": "Prisma.prisma"
+  },
   "isort.args": ["--profile", "black"]
 }

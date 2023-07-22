@@ -55,9 +55,11 @@ import {
 import { Textarea } from '@app/components/ui/textarea';
 import { cn } from '@app/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { TrainingJob } from '@prisma/client';
 import { debounce } from 'lodash';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { fromTheme } from 'tailwind-merge';
 import * as z from 'zod';
@@ -96,8 +98,7 @@ export default function Tune() {
     Array<{ id: string; value: string; label: string; private: boolean }>
   >([]);
   const [features, setFeatures] = React.useState<Array<string>>([]);
-  const [submissionData, setSubmissionData] =
-    React.useState<Partial<z.infer<typeof formSchema>>>();
+  const [job, setJob] = React.useState<TrainingJob>();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -116,15 +117,22 @@ export default function Tune() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
-    await startFinetune({
+    const job = await startFinetune({
       modelName: values.name,
       baseModel: values.baseModel,
       datasetRepoId: values.dataset.id,
       promptTemplate: values.promptTemplate,
     });
+    setJob(job);
     setLoading(false);
-    setSubmissionData(values);
   }
+
+  // Annoying workaround because redirect in submission handler fails due to exception catching
+  React.useEffect(() => {
+    if (job) {
+      redirect(`/jobs/${job.id}`);
+    }
+  }, [job]);
 
   React.useEffect(() => {
     const dataset = form.getValues('dataset');
@@ -152,33 +160,6 @@ export default function Tune() {
     debounce(updateDatasets, 200),
     []
   );
-
-  if (submissionData) {
-    return (
-      <Card className="w-[350px]">
-        <CardHeader>
-          <CardTitle>{submissionData.name}</CardTitle>
-          <CardDescription>
-            Finetune started. You can monitor the run on wandb.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-2">
-            <p>
-              <b>Base Model:</b>
-            </p>
-            <p>{submissionData.baseModel}</p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <p>
-              <b>Dataset:</b>
-            </p>
-            <p>{submissionData.dataset!.id}</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <>
