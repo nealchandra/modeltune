@@ -33,6 +33,7 @@ class TrainingJobStep(str, Enum):
     PREPARING_DATASET = "PREPARING_DATASET"
     TRAINING_STARTED = "TRAINING_STARTED"
     EPOCH_COMPLETED = "EPOCH_COMPLETED"
+    WANDB_RUN_CREATED = "WANDB_RUN_CREATED"
 
 
 class LLMTrainerCallback(TrainerCallback):

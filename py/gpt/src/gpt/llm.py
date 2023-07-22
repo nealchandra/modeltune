@@ -165,7 +165,7 @@ class LLM:
             callbacks.append(
                 CustomWandBCallback(
                     on_init=lambda url: on_step(
-                        TrainingJobStep.PREPARING_DATASET,
+                        TrainingJobStep.WANDB_RUN_CREATED,
                         {"wandb_url": url},
                     )
                 )

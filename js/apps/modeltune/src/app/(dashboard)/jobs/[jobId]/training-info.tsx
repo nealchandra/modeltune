@@ -79,12 +79,21 @@ const TimelineStep: React.FC<
           <>
             <TimelineTitle>Preparing dataset</TimelineTitle>
             <TimelineDescription>
+              Dataset is being formatted for training
+            </TimelineDescription>
+          </>
+        );
+      case 'WANDB_RUN_CREATED':
+        return (
+          <>
+            <TimelineTitle>W&B Run Created</TimelineTitle>
+            <TimelineDescription>
               {(step.data as { wandb_url: string } | void)?.wandb_url ? (
                 <a
                   href={(step.data as { wandb_url: string }).wandb_url}
                   className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:outline-none focus:ring-gray-200 focus:text-blue-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-gray-700"
                 >
-                  W&B Run
+                  View on W&B
                   <svg
                     className="w-3 h-3 ml-2"
                     aria-hidden="true"

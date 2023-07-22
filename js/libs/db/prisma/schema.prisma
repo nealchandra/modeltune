@@ -104,6 +104,7 @@ enum TrainingJobStepTypes {
   PREPARING_DATASET
   TRAINING_STARTED
   EPOCH_COMPLETED
+  WANDB_RUN_CREATED
 }
 
 model TrainingJobStep {
