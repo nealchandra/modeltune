@@ -24,25 +24,15 @@ export type GenerationParams = {
 };
 
 export enum BASE_MODELS {
-  FALCON = 'tiiuae/falcon-7b-instruct',
-  VICUNA = 'TheBloke/Wizard-Vicuna-13B-Uncensored-HF',
-  MPT = 'mosaicml/mpt-30b-chat',
+  LLAMA2 = 'meta-llama/Llama-2-7b',
 }
 
 export const BASE_MODEL_NAMES: { [key in BASE_MODELS]: string } = {
-  'tiiuae/falcon-7b-instruct': 'Falcon 7B Instruct',
-  'TheBloke/Wizard-Vicuna-13B-Uncensored-HF': 'Vicuna 13B',
-  'mosaicml/mpt-30b-chat': 'MPT 30B Chat',
+  [BASE_MODELS.LLAMA2]: 'Llama-2 7B',
 };
 
 const BASE_TEMPLATES: { [key in BASE_MODELS]: string } = {
-  'tiiuae/falcon-7b-instruct': `You are a helpful AI assistant
-User: What is a llama?
-Assistant:`,
-  'TheBloke/Wizard-Vicuna-13B-Uncensored-HF': `You are a helpful AI assistant ###
-### Human: What is a llama?
-### Assistant:`,
-  'mosaicml/mpt-30b-chat': `You are a helpful AI assistant
+  [BASE_MODELS.LLAMA2]: `You are a helpful AI assistant
 User: What is a llama?
 Assistant:`,
 };

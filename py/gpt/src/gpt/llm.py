@@ -47,11 +47,10 @@ from .reporter import CustomWandBCallback, LLMTrainerCallback, TrainingJobStep
 MICRO_BATCH_SIZE = 4  # this could actually be 5 but i like powers of 2
 BATCH_SIZE = 256
 GRADIENT_ACCUMULATION_STEPS = BATCH_SIZE // MICRO_BATCH_SIZE
-# EPOCHS = 3  # we don't need 3 tbh
-EPOCHS = 2
+EPOCHS = 5
 LEARNING_RATE = 3e-4  # the Karpathy constant
 CUTOFF_LEN = 256  # 256 accounts for about 96% of the data
-LORA_R = 8
+LORA_R = 16
 LORA_ALPHA = 16
 LORA_DROPOUT = 0.05
 
@@ -86,12 +85,6 @@ class LLM:
         )
 
         config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
-        # if "mpt" in model_path:
-        #     config.attn_config[
-        #         "attn_impl"
-        #     ] = "triton"  # change this to use triton-based FlashAttention
-        #     config.init_device = "cuda:0"  # For fast initialization directly on GPU!
-
         self.model = AutoModelForCausalLM.from_pretrained(
             model_path,
             config=config,
@@ -134,15 +127,11 @@ class LLM:
         self.model = prepare_model_for_kbit_training(self.model)
         self.model.config.use_cache = False
 
-        if False:
-            target_modules = ["q_proj", "v_proj"]
-        else:
-            target_modules = ["query_key_value"]
-
         config = LoraConfig(
             r=LORA_R,
             lora_alpha=LORA_ALPHA,
-            target_modules=target_modules,
+            # only support llama atm
+            target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
             lora_dropout=LORA_DROPOUT,
             bias="none",
             task_type=TaskType.CAUSAL_LM,
@@ -154,7 +143,7 @@ class LLM:
         data = load_dataset(dataset_path)
         data = (
             data["train"]
-            .select(range(20))
+            .select(range(20000))
             .map(lambda row: self.tokenizer(chevron.render(prompt_template, row)))
         )
 
