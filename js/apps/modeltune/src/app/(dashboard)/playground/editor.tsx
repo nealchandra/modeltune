@@ -20,7 +20,7 @@ export const Editor = () => {
   const [finetunes, setFinetunes] = React.useState<string[]>([]);
   const [generationParams, setGenerationParams] =
     React.useState<GenerationParams>({
-      repoId: BASE_MODELS.FALCON,
+      repoId: BASE_MODELS.LLAMA2,
       lora: undefined,
       temperature: 0.7,
       topP: 0.7,

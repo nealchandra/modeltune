@@ -104,7 +104,7 @@ export default function Tune() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      baseModel: BASE_MODELS.FALCON,
+      baseModel: BASE_MODELS.LLAMA2,
       promptTemplate: '',
       feature: '',
       dataset: undefined,
