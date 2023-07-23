@@ -24,7 +24,7 @@ export type GenerationParams = {
 };
 
 export enum BASE_MODELS {
-  LLAMA2 = 'meta-llama/Llama-2-7b',
+  LLAMA2 = 'meta-llama/Llama-2-7b-hf',
 }
 
 export const BASE_MODEL_NAMES: { [key in BASE_MODELS]: string } = {
