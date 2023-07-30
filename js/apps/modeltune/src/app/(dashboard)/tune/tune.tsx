@@ -117,12 +117,13 @@ export default function Tune() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
-    const job = await startFinetune({
-      modelName: values.name,
-      baseModel: values.baseModel,
-      datasetRepoId: values.dataset.id,
-      promptTemplate: values.promptTemplate,
-    });
+    console.log(values);
+    // const job = await startFinetune({
+    //   modelName: values.name,
+    //   baseModel: values.baseModel,
+    //   datasetRepoId: values.dataset.id,
+    //   promptTemplate: values.promptTemplate,
+    // });
     setJob(job);
     setLoading(false);
   }
