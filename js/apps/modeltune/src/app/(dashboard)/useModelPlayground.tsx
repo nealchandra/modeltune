@@ -25,13 +25,13 @@ export type GenerationParams = {
 
 export enum BASE_MODELS {
   LLAMA2 = 'meta-llama/Llama-2-7b-hf',
-  LLAMA2_CHAT = 'meta-llama/Llama-2-7b-chat-hf',
+  LLONGMA_7B = 'conceptofmind/LLongMA-2-7b-16k',
   LLAMA2_13B = 'meta-llama/Llama-2-13b-hf',
 }
 
 export const BASE_MODEL_NAMES: { [key in BASE_MODELS]: string } = {
   [BASE_MODELS.LLAMA2]: 'Llama-2 7B',
-  [BASE_MODELS.LLAMA2_CHAT]: 'Llama-2 7B Chat',
+  [BASE_MODELS.LLONGMA_7B]: 'LLongMA-2 7B 16k',
   [BASE_MODELS.LLAMA2_13B]: 'Llama-2 13B',
 };
 
@@ -39,9 +39,7 @@ const BASE_TEMPLATES: { [key in BASE_MODELS]: string } = {
   [BASE_MODELS.LLAMA2]: `You are a helpful AI assistant
 User: What is a llama?
 Assistant:`,
-  [BASE_MODELS.LLAMA2_CHAT]: `You are a helpful AI assistant
-User: What is a llama?
-Assistant:`,
+  [BASE_MODELS.LLONGMA_7B]: '',
   [BASE_MODELS.LLAMA2_13B]: `You are a helpful AI assistant
 User: What is a llama?
 Assistant:`,
