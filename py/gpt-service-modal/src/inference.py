@@ -3,6 +3,7 @@ import shutil
 from typing import Optional
 
 import modal
+from modal import gpu
 from modal.cls import ClsMixin
 
 from .common import finetunes_volume, models_volume, stub
@@ -12,7 +13,7 @@ from .inngest import Inngest
 
 @stub.cls(
     cloud="gcp",
-    gpu="A100",
+    gpu=gpu.A100(count=1),
     image=stub.inference_image,
     secrets=[
         modal.Secret.from_name("hf-secret"),

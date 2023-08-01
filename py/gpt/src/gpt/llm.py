@@ -47,9 +47,8 @@ from .reporter import CustomWandBCallback, LLMTrainerCallback, TrainingJobStep
 MICRO_BATCH_SIZE = 4  # this could actually be 5 but i like powers of 2
 BATCH_SIZE = 256
 GRADIENT_ACCUMULATION_STEPS = BATCH_SIZE // MICRO_BATCH_SIZE
-EPOCHS = 5
-LEARNING_RATE = 3e-4  # the Karpathy constant
-CUTOFF_LEN = 256  # 256 accounts for about 96% of the data
+EPOCHS = 3
+LEARNING_RATE = 2e-4
 LORA_R = 16
 LORA_ALPHA = 16
 LORA_DROPOUT = 0.05
@@ -101,7 +100,7 @@ class LLM:
         self.model = PeftModel.from_pretrained(
             self.model,
             lora_path,
-            device_map={"": 0},
+            device_map="auto",
             torch_dtype=torch.float32,
         )
         print("{} Lora Applied.".format(lora_path))
@@ -127,6 +126,8 @@ class LLM:
         self.model = prepare_model_for_kbit_training(self.model)
         self.model.config.use_cache = False
 
+        # self.tokenizer.add_special_tokens({"pad_token": "<pad>"})
+
         config = LoraConfig(
             r=LORA_R,
             lora_alpha=LORA_ALPHA,
@@ -140,14 +141,14 @@ class LLM:
 
         on_step(TrainingJobStep.PREPARING_DATASET)
 
-        data = load_dataset(dataset_path)
-        data = (
-            data["train"]
-            .select(range(20000))
-            .map(lambda row: self.tokenizer(chevron.render(prompt_template, row)))
+        data = load_dataset(dataset_path, split="train[:1%]")
+        data = data.map(
+            lambda row: self.tokenizer(
+                f"{chevron.render(prompt_template, row)}{self.tokenizer.eos_token}",
+                max_length=self.tokenizer.model_max_length,
+                truncation=True,
+            )
         )
-
-        self.tokenizer.pad_token = self.tokenizer.eos_token
 
         callbacks = [LLMTrainerCallback(on_log=on_log, on_step=on_step)]
         if train_args["report_to_wandb"]:
@@ -164,8 +165,8 @@ class LLM:
             model=model,
             train_dataset=data,
             args=transformers.TrainingArguments(
-                per_device_train_batch_size=MICRO_BATCH_SIZE,
-                gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+                per_device_train_batch_size=1,
+                gradient_accumulation_steps=18,
                 num_train_epochs=EPOCHS,
                 learning_rate=LEARNING_RATE,
                 fp16=True,
@@ -174,6 +175,7 @@ class LLM:
                 output_dir=output_dir,
                 save_total_limit=2,
                 run_name=f"{output_dir.split('/')[-1]}",
+                optim="paged_adamw_32bit",
             ),
             callbacks=callbacks,
             data_collator=DataCollatorForLanguageModeling(self.tokenizer, mlm=False),
@@ -186,9 +188,9 @@ class LLM:
 
         generation_config = GenerationConfig(
             **{
-                "temperature": 0.7,
-                "top_p": 0.70,
-                "repetition_penalty": 50.0,
+                "temperature": 0.75,
+                "top_p": 1,
+                "repetition_penalty": 1,
                 "max_new_tokens": 512,
                 "do_sample": True,
                 **generation_args,
